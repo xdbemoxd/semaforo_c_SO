@@ -52,7 +52,7 @@ void cintaRecogida();
 int main()
 {
 
-    printf("are you gay?");
+    printf("are you gay benjamon?");
 
     return 0;
 }
