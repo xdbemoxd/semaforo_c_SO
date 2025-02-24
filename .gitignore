@@ -63,4 +63,12 @@ p/
 
 *.pdf
 
+RUN
+
+*:Zone.Identifier
+
+.vscode/
+
+dataSet.txt
+
 # End of https://www.toptal.com/developers/gitignore/api/c
