@@ -40,6 +40,8 @@ void áreaAlmacenamiento();
 void avion();
 void cintaRecogida();
 
+
+
 /*
 1) se debe crear una cola para priorizar los equipajes, para darle prioridad a los que necesitan
 
