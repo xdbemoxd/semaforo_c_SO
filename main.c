@@ -48,6 +48,10 @@ void cintaRecogida();
 2) se debe tener una lista de vuelos y sus respectivos datos
 
 3) organizar la entrada standart y como se ingresaran los datos
+
+[23/2/2025 21:32] Benjamin Marroquin: aviones = equipaje/3
+[23/2/2025 21:32] Benjamin Marroquin: para evitar que algún avión despeje sin estar totalmente lleno
+[23/2/2025 21:32] Benjamin Marroquin: o poner una restricción que si después de recibir equipaje tarda x cantidad de tiempo, el avión desoeje
 */
 
 

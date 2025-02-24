@@ -3,28 +3,32 @@ import random
 def generar_aviones():
     with open('Aviones.txt', 'w') as file:
         
-        for id in range(1, 5001):
+        numero_aviones = 8
+
+        file.write(f"{numero_aviones}\n")
+
+        for id in range(1, numero_aviones):
 
             tipo = random.randint(1, 3)
 
             if tipo == 1:
 
-                capacidad = random.randint(22000, 28000)
+                capacidad = random.randint(200, 400)
 
             elif tipo == 2:
 
-                capacidad = random.randint(15000, 20000)
+                capacidad = random.randint(500, 700)
 
             else:
 
-                capacidad = random.randint(40000, 48000)
+                capacidad = random.randint(700, 800)
 
             
             file.write(f"{id} {tipo} {capacidad} ")
 
-        file.write("\n")
+        file.write(f"\n{numero_aviones}\n")
 
-        for id in range(1, 5001):
+        for id in range(1, numero_aviones):
 
             pais = random.randint(1, 20)
 
@@ -110,7 +114,7 @@ def generar_aviones():
 
             lista_aviones = []
 
-            avion = random.randint(1,501)
+            avion = random.randint(1,8)
 
             if avion not in lista_aviones:
                 
@@ -119,7 +123,7 @@ def generar_aviones():
             else:
                 while avion in lista_aviones:
 
-                    avion = random.randint(1,501)
+                    avion = random.randint(1,8)
 
                     if avion not in lista_aviones:
                 
@@ -128,13 +132,31 @@ def generar_aviones():
 
             file.write(f"{id} {pais} {ciudad} {avion} ") 
 
-        file.write("\n")
+        nuemro_equipaje = 5001
 
-        for id in range(1, 5001):
+        file.write(f"\n{nuemro_equipaje}\n")
+
+        for id in range(1, nuemro_equipaje):
 
             tipo = random.randint(1, 4)
 
-            idvuelo = random.randint(1, 20)
+            idvuelo = random.randint(1, 8)
+
+            lista_vuelo = []
+
+            if idvuelo not in lista_vuelo:
+                
+                lista_vuelo.append(idvuelo)
+            
+            else:
+                while idvuelo in lista_vuelo:
+
+                    idvuelo = random.randint(1,8)
+
+                    if idvuelo not in lista_vuelo:
+                
+                        lista_vuelo.append(idvuelo)
+                        break
 
             fragil = random.randint(0, 1)
             
