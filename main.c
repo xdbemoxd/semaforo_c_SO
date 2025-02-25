@@ -1,111 +1,153 @@
 #include <stdio.h>
-#include "lista.h"
-#include "nodo.h"
-#include "queue.h"
+#include <semaphore.h>
 #include <time.h>
+#include <pthread.h>
+#include <stdlib.h>     // Para rand()
+#include <unistd.h>     // Para usleep()
+#include "lista.h"
+#include "queue.h"
+#include "avion.h"
+#include "equipaje.h"
+#include "vuelo.h"
 
+#include <string.h>
+
+//Semaforos
+sem_t sem_mostradores;       // Turnos para los 5000 mostradores
+sem_t sem_cintas[500];       // Turnos para las 500 cintas
+sem_t sem_almacenamiento[250]; // Turnos para las áreas de almacenamiento
+//Tamanos 
 #define numMostradores 5000
-
 #define numCintas 500
-
 #define numAreasAlmacenamiento 250
-/*
-typedef struct avi{
-    int id;  //identificador de avion
-    int tipo;      // "modelo de avion"
-    int capacidadCarga;  //equipaje maximo que puede llevar el avion
-    struct avi *prox; //apuntador a avion 
-} avion;
 
-typedef struct equi{
-    int id;
-    int tipo;      // 1) facturado, 2) mano, 3) especial, 4) sobredimensionado
-    int paisCiudad[2]; //(pais,ciudad) del destino a donde van a llegar 
-    int vuelo; // vuelo al que corresponde el equipaje
-    int fragilidad; //determina si es una algo qie debe tener un cuidado especial
-    struct equi *prox; //apuntador a avion 
-    time_t tiempo_inicio;
-} equipaje;
+//prototipo de cargarDatos
+void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes);
 
-typedef struct vue{
-    int id;  //identificador de avion
-    int paisCiudad[2];  // "modelo de avion"
-    int idAvion;  //equipaje maximo que puede llevar el avion
-    struct vue *prox; //apuntador a avion 
-} vuelo;
-
-void mostrador();
-void cinta();
-void áreaAlmacenamiento();
-void avion();
-void cintaRecogida();
-
-void tomarDatosAviones();
-void tomarDatosVuelos();
-void tomarDatosEquipaje();
-
-
-1) se debe crear una cola para priorizar los equipajes, para darle prioridad a los que necesitan
-
-2) se debe tener una lista de vuelos y sus respectivos datos
-
-3) organizar la entrada standart y como se ingresaran los datos
-
-[23/2/2025 21:32] Benjamin Marroquin: aviones = equipaje/3
-[23/2/2025 21:32] Benjamin Marroquin: para evitar que algún avión despeje sin estar totalmente lleno
-[23/2/2025 21:32] Benjamin Marroquin: o poner una restricción que si después de recibir equipaje tarda x cantidad de tiempo, el avión desoeje
-*/
+// Al principio del archivo, después de los includes
+volatile int ejecutando = 1;
 
 int main()
 {
+    //&inicializar
+    //listas/colas
+    listaAvion aviones;
+    listaVuelo vuelos;
+    listaEquipaje equipajes;
+    crear_LA(&aviones);
+    crear_LV(&vuelos);
+    crear_LE(&equipajes);
+    
+    // Cargar datos primero
+    cargarDatos(&aviones, &vuelos, &equipajes);
+    //mostrar
+    mostrar_LA(aviones);
+    mostrar_LV(vuelos);
+    mostrar_LE(equipajes);
 
-    printf("are you gay benjamon?");
-
+    vaciar_LA(&aviones);
+    vaciar_LV(&vuelos);
+    vaciar_LE(&equipajes);
+    
+    printf("Programa finalizado correctamente\n");
     return 0;
 }
 
-void tomarDatosAviones()
+void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes)
 {
-    int idAvione,tipoAvion,cantidadPasajeros,cantidadAviones,i;
-
-    printf("\nAviones\n");
-    scanf("%d", &cantidadAviones);
-
-    for(i=0; i<cantidadAviones-1; i++)
-    {
-        scanf("%d %d %d", &idAvione, &tipoAvion, &cantidadPasajeros);
-        printf("%d %d %d\n", idAvione, tipoAvion, cantidadPasajeros);
-    }
-}
-
-void tomarDatosVuelos()
-{
-    int idVuelo,pais,ciudad,idAv,j,cantidadVuelos;
-    printf("\nVuelos\n");
-    scanf("%d", &cantidadVuelos);
+    char *linea = NULL;
+    size_t len = 0;
+    ssize_t read;
+    int seccion = -1; // -1: ninguna, 0: aviones, 1: vuelos, 2: equipajes
     
-    printf("\ncantidad de Vuelos:%d\n",cantidadVuelos);
+    printf("Iniciando carga de datos...\n");
 
-    for(j=0; j<cantidadVuelos-1; j++)
-    {
-        printf("\nVuelo:%d\n",j);
-        scanf("%d %d %d %d", &idVuelo,&pais,&ciudad,&idAv);
-        printf("%d %d %d %d\n", idVuelo, pais, ciudad, idAv);
+    while ((read = getline(&linea, &len, stdin)) != -1) {
+        // Eliminar el salto de línea final si existe
+        if (read > 0 && linea[read-1] == '\n') {
+            linea[read-1] = '\0';
+        }
+        
+        // Ignorar líneas vacías
+        if (strlen(linea) <= 1) continue;
+        
+        // Detectar sección por comentarios
+        if (linea[0] == '#') {
+            if (strstr(linea, "aviones") != NULL) {
+                seccion = 0;
+                printf("\nProcesando aviones...\n");
+                continue;
+            } else if (strstr(linea, "vuelos") != NULL) {
+                seccion = 1;
+                printf("\nProcesando vuelos...\n");
+                continue;
+            } else if (strstr(linea, "equipajes") != NULL) {
+                seccion = 2;
+                printf("\nProcesando equipajes...\n");
+                continue;
+            }
+            continue;
+        }
+
+        switch(seccion) {
+            case 0: { // Aviones
+                avion *nuevoAvion = (avion*)malloc(sizeof(avion));
+                if (sscanf(linea, "%d %d %d", 
+                    &nuevoAvion->id, 
+                    &nuevoAvion->tipo, 
+                    &nuevoAvion->capacidadCarga) == 3) {
+                    insertar_final_LA(aviones, nuevoAvion);
+                    printf("#");
+                } else {
+                    free(nuevoAvion);
+                    printf("Error al leer avión: %s\n", linea);
+                }
+                break;
+            }
+            case 1: { // Vuelos
+                vuelo *nuevoVuelo = (vuelo*)malloc(sizeof(vuelo));
+                if (sscanf(linea, "%d %d %d %d", 
+                    &nuevoVuelo->id, 
+                    &nuevoVuelo->paisCiudad[0], 
+                    &nuevoVuelo->paisCiudad[1], 
+                    &nuevoVuelo->idAvion) == 4) {
+                    insertar_final_LV(vuelos, nuevoVuelo);
+                    printf("#");
+                } else {
+                    free(nuevoVuelo);
+                    printf("Error al leer vuelo: %s\n", linea);
+                }
+                break;
+            }
+            case 2: { // Equipajes
+                equipaje *nuevoEquipaje = (equipaje*)malloc(sizeof(equipaje));
+                if (sscanf(linea, "%d %d %d %d", 
+                    &nuevoEquipaje->id, 
+                    &nuevoEquipaje->tipo, 
+                    &nuevoEquipaje->vuelo, 
+                    &nuevoEquipaje->fragilidad) == 4) {
+                    
+                    vuelo *vueloAsignado = buscar_vuelo_por_id(*vuelos, nuevoEquipaje->vuelo);
+                    if (vueloAsignado != NULL) {
+                        nuevoEquipaje->paisCiudad[0] = vueloAsignado->paisCiudad[0];
+                        nuevoEquipaje->paisCiudad[1] = vueloAsignado->paisCiudad[1];
+                    } else {
+                        nuevoEquipaje->paisCiudad[0] = 0;
+                        nuevoEquipaje->paisCiudad[1] = 0;
+                    }
+                    
+                    nuevoEquipaje->tiempo_inicio = time(NULL);
+                    insertar_final_LE(equipajes, nuevoEquipaje);
+                    printf("#");
+                } else {
+                    free(nuevoEquipaje);
+                    printf("Error al leer equipaje: %s\n", linea);
+                }
+                break;
+            }
+        }
     }
 
-}
-
-void tomarDatosEquipaje()
-{
-    int idEquipaje,tipoEquipaje,Fragil,idVuelo,k,cantidadEquipaje;
-
-    printf("\nEquipaje\n");
-    scanf("%d", &cantidadEquipaje);
-
-    for(k=0; k<cantidadEquipaje-1; k++)
-    {
-        scanf("%d %d %d %d", &idEquipaje,&tipoEquipaje,&idVuelo,&Fragil);
-        printf("%d %d %d %d\n", idEquipaje,tipoEquipaje,idVuelo,Fragil);
-    }
-
+    printf("\nCarga de datos completada.\n");
+    free(linea);  // Liberar la memoria asignada por getline
 }

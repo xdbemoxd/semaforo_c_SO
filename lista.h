@@ -438,4 +438,85 @@ void vaciar_LV(listaVuelo *L){
 	L->longitud = 0;
 }
 
+// Función para mostrar un avión
+void mostrar_avion(avion *av) {
+    printf("\nAvión ID: %d \n", av->id);
+    printf("Tipo: %d\n", av->tipo);
+    printf("Capacidad de carga: %d\n", av->capacidadCarga);
+}
+
+// Función para mostrar un vuelo
+void mostrar_vuelo(vuelo *v) {
+    printf("\nVuelo ID: %d \n", v->id);
+    printf("País destino: %d\n", v->paisCiudad[0]);
+    printf("Ciudad destino: %d\n", v->paisCiudad[1]);
+    printf("ID Avión asignado: %d\n", v->idAvion);
+}
+
+// Función para mostrar un equipaje
+void mostrar_equipaje(equipaje *eq) {
+    printf("\nEquipaje ID: %d \n", eq->id);
+    printf("Tipo: %d (", eq->tipo);
+    switch(eq->tipo) {
+        case 1: printf("Facturado"); break;
+        case 2: printf("Mano"); break;
+        case 3: printf("Especial"); break;
+        default: printf("Desconocido"); break;
+    }
+    printf(")\n");
+    printf("ID Vuelo: %d\n", eq->vuelo);
+    printf("País destino: %d\n", eq->paisCiudad[0]);
+    printf("Ciudad destino: %d\n", eq->paisCiudad[1]);
+    printf("Fragilidad: %s\n", eq->fragilidad ? "Sí" : "No");
+    printf("Tiempo inicio: %s", ctime(&eq->tiempo_inicio));
+}
+
+// Función para mostrar lista de aviones
+void mostrar_LA(listaAvion L) {
+    avion *aux = L.prim;
+    if (L.longitud == 0) {
+        printf("\nLista de aviones vacía\n");
+        return;
+    }
+    
+    printf("\nLISTA DE AVIONES (%d)\n", L.longitud);
+    while (aux != NULL) {
+        mostrar_avion(aux);
+        aux = aux->prox;
+    }
+    printf("----------------------------\n");
+}
+
+// Función para mostrar lista de vuelos
+void mostrar_LV(listaVuelo L) {
+    vuelo *aux = L.prim;
+    if (L.longitud == 0) {
+        printf("\nLista de vuelos vacía\n");
+        return;
+    }
+    
+    printf("\nLISTA DE VUELOS (%d)\n", L.longitud);
+    while (aux != NULL) {
+        mostrar_vuelo(aux);
+        aux = aux->prox;
+    }
+    printf("----------------------------\n");
+}
+
+// Función para mostrar lista de equipajes
+void mostrar_LE(listaEquipaje L) {
+    equipaje *aux = L.prim;
+    if (L.longitud == 0) {
+        printf("\nLista de equipajes vacía\n");
+        return;
+    }
+    
+    printf("\nLISTA DE EQUIPAJES (%d)\n", L.longitud);
+    while (aux != NULL) {
+        mostrar_equipaje(aux);
+        aux = aux->prox;
+    }
+    printf("----------------------------\n");
+}
+
 #endif
