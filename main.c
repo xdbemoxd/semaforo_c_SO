@@ -9,7 +9,7 @@
 #define numCintas 500
 
 #define numAreasAlmacenamiento 250
-
+/*
 typedef struct avi{
     int id;  //identificador de avion
     int tipo;      // "modelo de avion"
@@ -37,10 +37,10 @@ typedef struct vue{
 void mostrador();
 void cinta();
 void áreaAlmacenamiento();
-void avion();
+void avionF();
 void cintaRecogida();
 
-/*
+
 1) se debe crear una cola para priorizar los equipajes, para darle prioridad a los que necesitan
 
 2) se debe tener una lista de vuelos y sus respectivos datos
@@ -51,8 +51,10 @@ void cintaRecogida();
 
 int main()
 {
-
-    printf("are you gay benjamon?");
+    listaEquipaje equipaje;
+    listaVuelo vuelo;
+    listaAvion avion;
+    printf("are you gay benjamon?\n" );
 
     return 0;
 }
