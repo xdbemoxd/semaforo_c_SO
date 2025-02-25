@@ -37,8 +37,12 @@ typedef struct vue{
 void mostrador();
 void cinta();
 void áreaAlmacenamiento();
-void avionF();
+void avion();
 void cintaRecogida();
+
+void tomarDatosAviones();
+void tomarDatosVuelos();
+void tomarDatosEquipaje();
 
 
 1) se debe crear una cola para priorizar los equipajes, para darle prioridad a los que necesitan
@@ -46,15 +50,62 @@ void cintaRecogida();
 2) se debe tener una lista de vuelos y sus respectivos datos
 
 3) organizar la entrada standart y como se ingresaran los datos
-*/
 
+[23/2/2025 21:32] Benjamin Marroquin: aviones = equipaje/3
+[23/2/2025 21:32] Benjamin Marroquin: para evitar que algún avión despeje sin estar totalmente lleno
+[23/2/2025 21:32] Benjamin Marroquin: o poner una restricción que si después de recibir equipaje tarda x cantidad de tiempo, el avión desoeje
+*/
 
 int main()
 {
-    listaEquipaje equipaje;
-    listaVuelo vuelo;
-    listaAvion avion;
-    printf("are you gay benjamon?\n" );
+
+    printf("are you gay benjamon?");
 
     return 0;
+}
+
+void tomarDatosAviones()
+{
+    int idAvione,tipoAvion,cantidadPasajeros,cantidadAviones,i;
+
+    printf("\nAviones\n");
+    scanf("%d", &cantidadAviones);
+
+    for(i=0; i<cantidadAviones-1; i++)
+    {
+        scanf("%d %d %d", &idAvione, &tipoAvion, &cantidadPasajeros);
+        printf("%d %d %d\n", idAvione, tipoAvion, cantidadPasajeros);
+    }
+}
+
+void tomarDatosVuelos()
+{
+    int idVuelo,pais,ciudad,idAv,j,cantidadVuelos;
+    printf("\nVuelos\n");
+    scanf("%d", &cantidadVuelos);
+    
+    printf("\ncantidad de Vuelos:%d\n",cantidadVuelos);
+
+    for(j=0; j<cantidadVuelos-1; j++)
+    {
+        printf("\nVuelo:%d\n",j);
+        scanf("%d %d %d %d", &idVuelo,&pais,&ciudad,&idAv);
+        printf("%d %d %d %d\n", idVuelo, pais, ciudad, idAv);
+    }
+
+}
+
+void tomarDatosEquipaje()
+{
+    int idEquipaje,tipoEquipaje,Fragil,idVuelo,k,cantidadEquipaje;
+
+    printf("\nEquipaje\n");
+    scanf("%d", &cantidadEquipaje);
+
+    for(k=0; k<cantidadEquipaje-1; k++)
+    {
+        scanf("%d %d %d %d", &idEquipaje,&tipoEquipaje,&idVuelo,&Fragil);
+        printf("%d %d %d %d\n", idEquipaje,tipoEquipaje,idVuelo,Fragil);
+    }
+
 }
