@@ -16,10 +16,6 @@
 sem_t sem_mostradores;       // Turnos para los 5000 mostradores
 sem_t sem_cintas[500];       // Turnos para las 500 cintas
 sem_t sem_almacenamiento[250]; // Turnos para las áreas de almacenamiento
-//Tamanos 
-#define numMostradores 5000
-#define numCintas 500
-#define numAreasAlmacenamiento 250
 
 //prototipo de cargarDatos
 void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes);
@@ -31,20 +27,13 @@ int main()
 {
     //&inicializar
     //listas/colas
-    listaAvion aviones;
-    listaVuelo vuelos;
-    listaEquipaje equipajes;
-    crear_LA(&aviones);
-    crear_LV(&vuelos);
-    crear_LE(&equipajes);
-    
     // Cargar datos primero
     cargarDatos(&aviones, &vuelos, &equipajes);
     //mostrar
-    mostrar_LA(aviones);
-    mostrar_LV(vuelos);
-    //mostrar_LE(equipajes);
 
+    listaAvion aviones;
+    listaVuelo vuelos;
+    listaEquipaje equipajes;
     vaciar_LA(&aviones);
     vaciar_LV(&vuelos);
     vaciar_LE(&equipajes);
@@ -52,8 +41,8 @@ int main()
     printf("Programa finalizado correctamente\n");
     return 0;
 }
-
-void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes)
+    mostrar_LA(aviones);
+    mostrar_LV(vuelos);
 {
     char *linea = NULL;
     size_t len = 0;
