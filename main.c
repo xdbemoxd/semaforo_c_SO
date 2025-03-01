@@ -170,4 +170,3 @@ int main()
 
     printf("\nCarga de datos completada.\n");
     free(linea);  // Liberar la memoria asignada por getline
-}
