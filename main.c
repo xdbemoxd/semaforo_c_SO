@@ -210,6 +210,6 @@ void* procesoMostrador(void* threadid)
 {
     long tid = (long)threadid;
     
-    printf("hilo del proceso %d\n",tid);
+    printf("hilo del proceso %ld\n",tid);
 
 }
