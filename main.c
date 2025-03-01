@@ -14,8 +14,12 @@
 
 //Semaforos
 sem_t sem_mostradores;       // Turnos para los 5000 mostradores
-sem_t sem_cintas[500];       // Turnos para las 500 cintas
-sem_t sem_almacenamiento[250]; // Turnos para las áreas de almacenamiento
+sem_t sem_cintas;       // Turnos para las 500 cintas
+sem_t sem_almacenamiento; // Turnos para las áreas de almacenamiento
+//listas
+listaAvion aviones;
+listaVuelo vuelos;
+listaEquipaje equipajes;
 //Tamanos 
 #define numMostradores 5000
 #define numCintas 500
@@ -27,13 +31,20 @@ void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipaj
 // Al principio del archivo, después de los includes
 volatile int ejecutando = 1;
 
+void* procesoMostrador(void* threadid);
+void procesoCinta();
+void procesoAreaAlmacenamiento(); 
+void procesoAvion();
+void procesoCintaRecogida();
+
+
 int main()
 {
     //&inicializar
+    equipaje nodoAux;
+    pthread_t hiloEquipaje;
+    long idEquipaje;
     //listas/colas
-    listaAvion aviones;
-    listaVuelo vuelos;
-    listaEquipaje equipajes;
     crear_LA(&aviones);
     crear_LV(&vuelos);
     crear_LE(&equipajes);
@@ -41,10 +52,22 @@ int main()
     // Cargar datos primero
     cargarDatos(&aviones, &vuelos, &equipajes);
     //mostrar
-    mostrar_LA(aviones);
-    mostrar_LV(vuelos);
+    //mostrar_LA(aviones);
+    //mostrar_LV(vuelos);
     //mostrar_LE(equipajes);
 
+    nodoAux = *equipajes.prim;
+
+    while (nodoAux.prox != NULL)
+    {
+        idEquipaje = nodoAux.id;
+        pthread_create(&hiloEquipaje, NULL, procesoMostrador, (void*)idEquipaje);
+        nodoAux = *nodoAux.prox;
+    }
+
+    idEquipaje = nodoAux.id;
+    pthread_create(&hiloEquipaje, NULL, procesoMostrador, (void*)idEquipaje);
+    
     vaciar_LA(&aviones);
     vaciar_LV(&vuelos);
     vaciar_LE(&equipajes);
@@ -181,4 +204,12 @@ void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipaj
 
     printf("\nCarga de datos completada.\n");
     free(linea);  // Liberar la memoria asignada por getline
+}
+
+void* procesoMostrador(void* threadid)
+{
+    long tid = (long)threadid;
+    
+    printf("hilo del proceso %d\n",tid);
+
 }
