@@ -14,12 +14,18 @@
 
 //Semaforos
 sem_t sem_mostradores;       // Turnos para los 5000 mostradores
+sem_t sem_aux_mostrador;
 sem_t sem_cintas;       // Turnos para las 500 cintas
 sem_t sem_almacenamiento; // Turnos para las áreas de almacenamiento
 //listas
 listaAvion aviones;
 listaVuelo vuelos;
 listaEquipaje equipajes;
+//cola
+Cola colaEquipajeTipo1;
+Cola colaEquipajeTipo2;
+Cola colaEquipajeTipo3;
+Cola colaEquipajeTipo4;
 //Tamanos 
 #define numMostradores 5000
 #define numCintas 500
@@ -44,10 +50,20 @@ int main()
     equipaje nodoAux;
     pthread_t hiloEquipaje;
     long idEquipaje;
-    //listas/colas
+    //listas
     crear_LA(&aviones);
     crear_LV(&vuelos);
     crear_LE(&equipajes);
+
+    //colas
+    crearCola(&colaEquipajeTipo1);
+    crearCola(&colaEquipajeTipo2);
+    crearCola(&colaEquipajeTipo3);
+    crearCola(&colaEquipajeTipo4);
+
+    //semaforos
+    sem_init(&sem_mostradores, 0, numMostradores);
+    sem_init(&sem_aux_mostrador, 0, 1);
     
     // Cargar datos primero
     cargarDatos(&aviones, &vuelos, &equipajes);
@@ -57,21 +73,25 @@ int main()
     //mostrar_LE(equipajes);
 
     nodoAux = *equipajes.prim;
-
+    
     while (nodoAux.prox != NULL)
     {
         idEquipaje = nodoAux.id;
         pthread_create(&hiloEquipaje, NULL, procesoMostrador, (void*)idEquipaje);
+        pthread_join(hiloEquipaje, NULL);
         nodoAux = *nodoAux.prox;
     }
 
     idEquipaje = nodoAux.id;
     pthread_create(&hiloEquipaje, NULL, procesoMostrador, (void*)idEquipaje);
-    
+    pthread_join(hiloEquipaje, NULL);
+
+    mostrar_CE(&colaEquipajeTipo1);
+
     vaciar_LA(&aviones);
     vaciar_LV(&vuelos);
     vaciar_LE(&equipajes);
-    
+    printf("\nAaaasdasdasdsad\n");
     printf("Programa finalizado correctamente\n");
     return 0;
 }
@@ -201,15 +221,33 @@ void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipaj
             }
         }
     }
-
     printf("\nCarga de datos completada.\n");
     free(linea);  // Liberar la memoria asignada por getline
 }
 
 void* procesoMostrador(void* threadid)
 {
+    //printf("Jorge es gay");
     long tid = (long)threadid;
+    equipaje *auxEquipaje;
+
+    sem_wait(&sem_mostradores);
+
+    //printf("hilo del proceso %ld\n",tid);
+
+    sem_wait(&sem_aux_mostrador);
+    sleep(0.5);
+    auxEquipaje = buscar_equipaje_por_id(equipajes, tid);
     
-    printf("hilo del proceso %ld\n",tid);
+    //encolar(&colaEquipajeTipo1,auxEquipaje);
+    
+    printf("id %d Vuelo %d\n",auxEquipaje->id,auxEquipaje->vuelo);
+
+    //printf("\ntamano cola %d\n",colaEquipajeTipo1.tamano);
+
+    sem_post(&sem_aux_mostrador);
+    
+
+    sem_post(&sem_mostradores);
 
 }

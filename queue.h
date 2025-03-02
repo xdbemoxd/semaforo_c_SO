@@ -3,22 +3,11 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-
-typedef struct Cliente {
-    int id;
-    bool vip;
-    bool retiro;
-    int m2;
-    int diaLleg;
-    int tiempoRet;
-    int horaLleg;
-    struct Cliente* siguiente;
-} Cliente;
-
+#include "equipaje.h"
 
 typedef struct Cola {
-    Cliente* frente;
-    Cliente* trasero;
+    equipaje* frente;
+    equipaje* trasero;
     int tamano;
 } Cola;
 
@@ -37,18 +26,59 @@ int  esVacio(Cola* cola) {
   return cola->tamano == 0;
 }
 
-void encolar(Cola* cola, Cliente* cliente) {
-    cliente->siguiente = NULL;
-    if (esVacio(cola)) {
-      cola->frente  = cola -> trasero= cliente;
-    } else {
-      cola->trasero->siguiente = cliente;
+void encolar(Cola* cola, equipaje* equi) 
+{
+    equi->prox = NULL;
+    
+    printf("Jorge es gay dentro de la funcion");
+
+    if ( cola->frente == NULL ) 
+    {
+        cola->frente  = equi;
+        cola->trasero = equi;
+    } 
+    else 
+    {
+        cola->trasero->prox = equi;
+        cola->trasero = equi;
     }
-    cola->trasero = cliente;
+
     cola->tamano++;
 }
 
-Cliente* desencolar(Cola* cola) {
+void mostrar_equipaje_C(equipaje *eq) {
+    printf("\nEquipaje ID: %d \n", eq->id);
+    printf("Tipo: %d (", eq->tipo);
+    switch(eq->tipo) {
+        case 1: printf("Facturado"); break;
+        case 2: printf("Mano"); break;
+        case 3: printf("Especial"); break;
+        default: printf("Desconocido"); break;
+    }
+    printf(")\n");
+    printf("ID Vuelo: %d\n", eq->vuelo);
+    printf("País destino: %d\n", eq->paisCiudad[0]);
+    printf("Ciudad destino: %d\n", eq->paisCiudad[1]);
+    printf("Fragilidad: %s\n", eq->fragilidad ? "Sí" : "No");
+    printf("Tiempo inicio: %s", ctime(&eq->tiempo_inicio));
+}
+
+void mostrar_CE(Cola *L) {
+    equipaje *aux = L->frente;
+    if (L->frente == 0) {
+        printf("\nCola de equipajes vacía\n");
+        return;
+    }
+    
+    printf("\nLISTA DE EQUIPAJES (%d)\n", L->tamano);
+    while (aux != NULL) {
+        mostrar_equipaje_C(aux);
+        aux = aux->prox;
+    }
+    printf("----------------------------\n");
+}
+
+/*Cliente desencolar(Cola* cola) {
     if (esVacio(cola)) {
         return NULL;
     }
@@ -60,7 +90,7 @@ Cliente* desencolar(Cola* cola) {
     cola->tamano--;
     return cliente;
 }
-
+*/
 // int size(Cola* cola) {
 //     return cola->tamano;
 // }

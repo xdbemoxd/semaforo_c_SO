@@ -310,13 +310,25 @@ void insertar_final_LV(listaVuelo *L, vuelo *Val){
 }
 
 // Funciones de búsqueda por ID
-equipaje* buscar_equipaje_por_id(listaEquipaje L, int id){
+equipaje* buscar_equipaje_por_id(listaEquipaje L, int id)
+{
 	equipaje *aux = L.prim;
+	//equipaje *aux2;
 	while(aux != NULL){
-		if(aux->id == id) return aux;
-		aux = aux->prox;
+		if(aux->id == id)
+		{
+			//aux2->prox = aux->prox;
+			//aux->prox=NULL;
+			return aux;
+			break;
+		}
+		else
+		{
+			//aux2 = aux;
+			aux = aux->prox;
+		}
+		
 	}
-	return NULL;
 }
 
 avion* buscar_avion_por_id(listaAvion L, int id){
