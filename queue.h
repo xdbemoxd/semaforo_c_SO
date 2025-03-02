@@ -3,11 +3,11 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-#include "equipaje.h"
+#include "nodo.h"
 
 typedef struct Cola {
-    equipaje* frente;
-    equipaje* trasero;
+    nodo* frente;
+    nodo* trasero;
     int tamano;
 } Cola;
 
@@ -23,59 +23,48 @@ void crearCola(Cola* cola) {
 }
 
 int  esVacio(Cola* cola) {
-  return cola->tamano == 0;
+  return cola->tamano;
 }
 
-void encolar(Cola* cola, equipaje* equi) 
+void encolar(Cola* cola, int idEqui) 
 {
-    equi->prox = NULL;
-    
-    printf("Jorge es gay dentro de la funcion");
+    nodo* nodoEquipaje = (nodo*)malloc(sizeof(nodo));
+    nodo* aux; 
 
-    if ( cola->frente == NULL ) 
+    nodoEquipaje->prox = NULL;
+    nodoEquipaje->info = idEqui;
+
+    if ( cola->tamano == 0 ) 
     {
-        cola->frente  = equi;
-        cola->trasero = equi;
+        cola->frente  = nodoEquipaje;
+        cola->trasero = nodoEquipaje;
     } 
     else 
     {
-        cola->trasero->prox = equi;
-        cola->trasero = equi;
+        aux = cola->trasero;
+        aux->prox = nodoEquipaje;
+        cola->trasero = nodoEquipaje;
     }
 
     cola->tamano++;
 }
 
-void mostrar_equipaje_C(equipaje *eq) {
-    printf("\nEquipaje ID: %d \n", eq->id);
-    printf("Tipo: %d (", eq->tipo);
-    switch(eq->tipo) {
-        case 1: printf("Facturado"); break;
-        case 2: printf("Mano"); break;
-        case 3: printf("Especial"); break;
-        default: printf("Desconocido"); break;
-    }
-    printf(")\n");
-    printf("ID Vuelo: %d\n", eq->vuelo);
-    printf("País destino: %d\n", eq->paisCiudad[0]);
-    printf("Ciudad destino: %d\n", eq->paisCiudad[1]);
-    printf("Fragilidad: %s\n", eq->fragilidad ? "Sí" : "No");
-    printf("Tiempo inicio: %s", ctime(&eq->tiempo_inicio));
-}
-
 void mostrar_CE(Cola *L) {
-    equipaje *aux = L->frente;
-    if (L->frente == 0) {
+    nodo *aux = L->frente;
+
+    if ( esVacio(L) == 0 ) {
         printf("\nCola de equipajes vacía\n");
-        return;
-    }
+    }else
+    {
+        printf("\nLISTA DE EQUIPAJES (%d)\n", L->tamano);
     
-    printf("\nLISTA DE EQUIPAJES (%d)\n", L->tamano);
-    while (aux != NULL) {
-        mostrar_equipaje_C(aux);
-        aux = aux->prox;
+        while (aux != NULL) 
+        {
+            printf("\ncola de equipajes (%d)\n", aux->info);
+            aux = aux->prox;
+        }
+        printf("----------------------------\n");
     }
-    printf("----------------------------\n");
 }
 
 /*Cliente desencolar(Cola* cola) {

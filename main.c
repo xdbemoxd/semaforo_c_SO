@@ -26,6 +26,8 @@ Cola colaEquipajeTipo1;
 Cola colaEquipajeTipo2;
 Cola colaEquipajeTipo3;
 Cola colaEquipajeTipo4;
+//nodo para guardar el anterior que se busco
+equipaje *anteriorAuxEquipaje;
 //Tamanos 
 #define numMostradores 5000
 #define numCintas 500
@@ -37,19 +39,27 @@ void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipaj
 // Al principio del archivo, después de los includes
 volatile int ejecutando = 1;
 
+//Funciones que exije el enunciado
 void* procesoMostrador(void* threadid);
 void procesoCinta();
 void procesoAreaAlmacenamiento(); 
 void procesoAvion();
 void procesoCintaRecogida();
 
+//Otras funciones
+void datosEquipaje(ListaEquipaje l, equipaje* traerDatos, int tid, equipaje* datoAterior );
 
 int main()
 {
     //&inicializar
-    equipaje nodoAux;
+    equipaje *nodoAux;
     pthread_t hiloEquipaje;
-    long idEquipaje;
+    int idEquipaje;
+    int i=0;
+    int aux=0;
+
+    //nodo auxiliar en NULL
+    anteriorAuxEquipaje = NULL;
     //listas
     crear_LA(&aviones);
     crear_LV(&vuelos);
@@ -72,26 +82,29 @@ int main()
     //mostrar_LV(vuelos);
     //mostrar_LE(equipajes);
 
-    nodoAux = *equipajes.prim;
-    
-    while (nodoAux.prox != NULL)
+    nodoAux = equipajes.prim;
+
+    pthread_t *vectorHilo = (pthread_t*)malloc(equipajes.longitud * sizeof(pthread_t));
+
+    while ( nodoAux != NULL)
     {
-        idEquipaje = nodoAux.id;
-        pthread_create(&hiloEquipaje, NULL, procesoMostrador, (void*)idEquipaje);
-        pthread_join(hiloEquipaje, NULL);
-        nodoAux = *nodoAux.prox;
+        idEquipaje = nodoAux->id;
+        pthread_create(&vectorHilo[i], NULL, procesoMostrador, &idEquipaje);
+        nodoAux = nodoAux->prox;
+        i++;
     }
 
-    idEquipaje = nodoAux.id;
-    pthread_create(&hiloEquipaje, NULL, procesoMostrador, (void*)idEquipaje);
-    pthread_join(hiloEquipaje, NULL);
+    while (aux<i)
+    {
+        pthread_join(vectorHilo[aux], NULL);
+        aux++;
+    }
 
-    mostrar_CE(&colaEquipajeTipo1);
+    //mostrar_CE(&colaEquipajeTipo1);
 
     vaciar_LA(&aviones);
     vaciar_LV(&vuelos);
     vaciar_LE(&equipajes);
-    printf("\nAaaasdasdasdsad\n");
     printf("Programa finalizado correctamente\n");
     return 0;
 }
@@ -228,20 +241,19 @@ void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipaj
 void* procesoMostrador(void* threadid)
 {
     //printf("Jorge es gay");
-    long tid = (long)threadid;
-    equipaje *auxEquipaje;
+    int tid = *( int* )threadid;
 
-    sem_wait(&sem_mostradores);
+    sem_wait( &sem_mostradores );
 
     //printf("hilo del proceso %ld\n",tid);
 
-    sem_wait(&sem_aux_mostrador);
-    sleep(0.5);
-    auxEquipaje = buscar_equipaje_por_id(equipajes, tid);
+    sem_wait( &sem_aux_mostrador );
+
+    equipaje *auxEquipaje;
+
+    datosEquipaje( equipajes, auxEquipaje, tid, anteriorAuxEquipaje );
     
-    //encolar(&colaEquipajeTipo1,auxEquipaje);
-    
-    printf("id %d Vuelo %d\n",auxEquipaje->id,auxEquipaje->vuelo);
+    encolar( &colaEquipajeTipo1, tid );
 
     //printf("\ntamano cola %d\n",colaEquipajeTipo1.tamano);
 
@@ -250,4 +262,60 @@ void* procesoMostrador(void* threadid)
 
     sem_post(&sem_mostradores);
 
+}
+
+void datosEquipaje(ListaEquipaje l, equipaje* traerDatos, int tid, equipaje* datoAterior)
+{
+    equipaje *auxEquipaje;
+
+    if ( datoAterior == NULL )
+    {
+        auxEquipaje = l.prim;
+
+        if ( auxEquipaje->id == tid )
+        {
+            traerDatos = auxEquipaje;
+        }else
+        {
+            while (auxEquipaje != NULL && auxEquipaje->id != tid)
+            {
+                //printf( "\nid: %d, Vuelo: %d, fragilidad: %d\n", auxEquipaje->id, auxEquipaje->vuelo, auxEquipaje->fragilidad );
+                printf( "\nJorge es gay\n");
+                if (auxEquipaje->id == tid)
+                {
+                    datoAterior = auxEquipaje;
+                    traerDatos = auxEquipaje;
+                    break;
+                }
+
+                auxEquipaje = auxEquipaje->prox;
+        
+            }
+        }
+    }else
+    {
+        auxEquipaje = datoAterior;
+
+        if ( auxEquipaje->id == tid )
+        {
+            traerDatos = auxEquipaje;
+        }else
+        {
+            while (auxEquipaje != NULL && auxEquipaje->id != tid)
+            {
+                printf( "\nRafael es gay\n");
+                if (auxEquipaje->id == tid)
+                {
+                    traerDatos = auxEquipaje;
+                    break;
+                }
+
+                auxEquipaje = auxEquipaje->prox;
+        
+            }
+        }
+        
+    }
+    
+    
 }
