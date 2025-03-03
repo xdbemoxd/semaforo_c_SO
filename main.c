@@ -27,17 +27,26 @@ Cola colaEquipajeTipo1;
 Cola colaEquipajeTipo2;
 Cola colaEquipajeTipo3;
 Cola colaEquipajeTipo4;
+Cola colaEquipajeTipo1Fragil;
+Cola colaEquipajeTipo2Fragil;
+Cola colaEquipajeTipo3Fragil;
+Cola colaEquipajeTipo4Fragil;
+//debuging
+int cantidadVeces =0;
+
 //nodo para guardar el anterior que se busco
 equipaje *anteriorAuxEquipaje;
 //Tamanos 
 #define numMostradores 5000
 #define numCintas 500
 #define numAreasAlmacenamiento 250
+#define maxHilo 100
 
 //prototipo de cargarDatos
 void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes);
 void cargarDatosArchivo(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes);
 int traerFragil(listaEquipaje* equipajes, int id);
+int tipoEquipaje(listaEquipaje* equipajes, int id);
 
 // Al principio del archivo, después de los includes
 volatile int ejecutando = 1;
@@ -50,7 +59,7 @@ void procesoAvion();
 void procesoCintaRecogida();
 
 //Otras funciones
-void datosEquipaje(ListaEquipaje l, equipaje** traerDatos, int tid, equipaje** datoAterior );
+
 
 int main()
 {
@@ -58,8 +67,9 @@ int main()
     equipaje *nodoAux;
     pthread_t hiloEquipaje;
     int idEquipaje;
-    int i=0;
-    int aux=0;
+    int i = 0;
+    int procesado = 0;
+    int hilos_lote = 0;
 
     //nodo auxiliar en NULL
     anteriorAuxEquipaje = NULL;
@@ -87,23 +97,54 @@ int main()
 
     nodoAux = equipajes.prim;
 
-    pthread_t *vectorHilo = (pthread_t*)malloc(equipajes.longitud * sizeof(pthread_t));
+    // Reservar memoria para los hilos
+    pthread_t *vectorHilo = (pthread_t*)malloc(maxHilo * sizeof(pthread_t));
 
-    while ( nodoAux != NULL)
-    {
-        idEquipaje = nodoAux->id;
-        pthread_create(&vectorHilo[i], NULL, procesoMostrador, &idEquipaje);
-        nodoAux = nodoAux->prox;
-        i++;
+    if (vectorHilo == NULL) {
+        printf("Error: No se pudo asignar memoria para los hilos\n");
+        return 1;
     }
 
-    while (aux<i)
+    // Procesar equipajes en lotes
+    nodoAux = equipajes.prim;
+    while (procesado < equipajes.longitud) 
     {
-        pthread_join(vectorHilo[aux], NULL);
-        aux++;
+        hilos_lote = 0;
+        
+        // Crear lote de hilos
+        while (hilos_lote < maxHilo && nodoAux != NULL) 
+        {
+            int *id = malloc(sizeof(int));
+            if (id != NULL) {
+                *id = nodoAux->id;
+                if (pthread_create(&vectorHilo[hilos_lote], NULL, procesoMostrador, id) == 0) {
+                    hilos_lote++;
+                    procesado++;
+                } else {
+                    free(id);
+                    printf("Error al crear hilo para equipaje %d\n", nodoAux->id);
+                }
+            }
+            nodoAux = nodoAux->prox;
+        }
+        
+        // Esperar a que termine el lote actual
+        for (int j = 0; j < hilos_lote; j++) {
+            pthread_join(vectorHilo[j], NULL);
+        }
     }
+
+    // Liberar memoria
+    free(vectorHilo);
 
     //mostrar_CE(&colaEquipajeTipo1);
+
+    printf("\ntamano cola1: %d\n",colaEquipajeTipo1.tamano);
+    printf("\ntamano cola2: %d\n",colaEquipajeTipo2.tamano);
+    printf("\ntamano cola3: %d\n",colaEquipajeTipo3.tamano);
+    printf("\ntamano cola4: %d\n",colaEquipajeTipo4.tamano);
+
+    //printf("%d veces", cantidadVeces);
 
     vaciar_LA(&aviones);
     vaciar_LV(&vuelos);
@@ -329,88 +370,81 @@ void cargarDatosArchivo(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *
 
 void* procesoMostrador(void* threadid)
 {
-    //printf("Jorge es gay");
     int tid = *( int* )threadid;
     int fragil;
+    equipaje *auxEquipaje = NULL;
 
     sem_wait( &sem_mostradores );
-
-    //printf("hilo del proceso %ld\n",tid);
     
     pthread_mutex_lock(&mutex_aux_mostrador);
 
     pthread_mutex_lock(&mutex_aux_mostrador_2);
+    
+    auxEquipaje = equipajes.prim;
 
-    fragil = traerFragil(&equipajes, tid); // Lectura segura
+    while (auxEquipaje != NULL && auxEquipaje->id != tid) {
+        auxEquipaje = auxEquipaje->prox;
+    }
 
+    if ( auxEquipaje->tipo == 1 )
+    {
+        cantidadVeces++;
+        if (auxEquipaje->fragilidad == 0 )
+        {
+            encolar(&colaEquipajeTipo1,tid);
+        }else
+        {
+            encolar(&colaEquipajeTipo1Fragil,tid);
+        } 
+    }else
+    {
+        if ( auxEquipaje->tipo == 2 )
+        {
+            if (auxEquipaje->fragilidad == 0 )
+            {
+                encolar(&colaEquipajeTipo2,tid);
+            }else
+            {
+                encolar(&colaEquipajeTipo2Fragil,tid);
+            } 
+        }else
+        {
+            if ( auxEquipaje->tipo == 3 )
+            {
+                if (auxEquipaje->fragilidad == 0 )
+                {
+                    encolar(&colaEquipajeTipo3,tid);
+                }else
+                {
+                    encolar(&colaEquipajeTipo3Fragil,tid);
+                } 
+            }else
+            {
+                if ( auxEquipaje->tipo == 4 )
+                {
+                    if (auxEquipaje->fragilidad == 0 )
+                    {
+                        encolar(&colaEquipajeTipo4,tid);
+                    }else
+                    {
+                        encolar(&colaEquipajeTipo4Fragil,tid);
+                    } 
+                }
+            }
+        }
+    }
 
     pthread_mutex_unlock(&mutex_aux_mostrador_2);
 
-    //encolar(&colaEquipajeTipo1, tid); // Operación segura
     pthread_mutex_unlock(&mutex_aux_mostrador);
 
-    // ----- Sección crítica: Acceso a datos de equipajes -----
-    /*pthread_mutex_lock(&mutex_aux_mostrador_2);
-    fragil = traerFragil(&equipajes, tid); // Lectura segura
-    printf("\nid: %d, fragil: %d\n", tid, fragil);
-    pthread_mutex_unlock(&mutex_aux_mostrador_2);*/
-
-
-    //printf("\nidEquipaje: %d, vuelo: %d, fragil: %d\n", auxEquipaje->id,auxEquipaje->vuelo,auxEquipaje->fragilidad);
-
-    //printf("\ntamano cola %d\n",colaEquipajeTipo1.tamano);
+    procesoCinta();
     
     sem_post(&sem_mostradores);
 
 }
 
-int traerFragil(listaEquipaje* l, int tid)
+void procesoCinta()
 {
-    equipaje *auxEquipaje = NULL;
-    int fragil = 2;
-
-    auxEquipaje = l->prim;
-
-    // Buscar el equipaje con el ID solicitado
-    while (auxEquipaje != NULL) 
-    {
-        if (auxEquipaje->id == tid)
-        {
-            fragil = auxEquipaje->fragilidad;
-            break;
-        } 
-        
-        auxEquipaje = auxEquipaje->prox;
-    }
-    return fragil;
-
-}
-
-
-void datosEquipaje(ListaEquipaje l, equipaje** traerDatos, int tid, equipaje** datoAnterior) {
     
-    equipaje *auxEquipaje = NULL;
-
-    // Si datoAnterior es NULL, comenzar desde el inicio de la lista
-    if (*datoAnterior == NULL) {
-        auxEquipaje = l.prim;
-    } else {
-        auxEquipaje = (*datoAnterior)->prox; // Continuar desde el último nodo
-    }
-
-    auxEquipaje = l.prim;
-
-    // Buscar el equipaje con el ID solicitado
-    while (auxEquipaje != NULL) {
-        if (auxEquipaje->id == tid) {
-            *traerDatos = auxEquipaje; // Devolver el nodo encontrado
-            *datoAnterior = auxEquipaje; // Actualizar para futuras búsquedas
-            return;
-        }
-        auxEquipaje = auxEquipaje->prox;
-    }
-
-    // Si no se encontró
-    *traerDatos = NULL;
-    *datoAnterior = NULL;
 }
