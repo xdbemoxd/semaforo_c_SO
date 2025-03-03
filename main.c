@@ -14,7 +14,8 @@
 
 //Semaforos
 sem_t sem_mostradores;       // Turnos para los 5000 mostradores
-sem_t sem_aux_mostrador;
+pthread_mutex_t mutex_aux_mostrador = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_aux_mostrador_2 = PTHREAD_MUTEX_INITIALIZER;
 sem_t sem_cintas;       // Turnos para las 500 cintas
 sem_t sem_almacenamiento; // Turnos para las áreas de almacenamiento
 //listas
@@ -35,6 +36,8 @@ equipaje *anteriorAuxEquipaje;
 
 //prototipo de cargarDatos
 void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes);
+void cargarDatosArchivo(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes);
+int traerFragil(listaEquipaje* equipajes, int id);
 
 // Al principio del archivo, después de los includes
 volatile int ejecutando = 1;
@@ -47,7 +50,7 @@ void procesoAvion();
 void procesoCintaRecogida();
 
 //Otras funciones
-void datosEquipaje(ListaEquipaje l, equipaje* traerDatos, int tid, equipaje* datoAterior );
+void datosEquipaje(ListaEquipaje l, equipaje** traerDatos, int tid, equipaje** datoAterior );
 
 int main()
 {
@@ -73,10 +76,10 @@ int main()
 
     //semaforos
     sem_init(&sem_mostradores, 0, numMostradores);
-    sem_init(&sem_aux_mostrador, 0, 1);
-    
+
     // Cargar datos primero
     cargarDatos(&aviones, &vuelos, &equipajes);
+    //cargarDatosArchivo(&aviones, &vuelos, &equipajes);
     //mostrar
     //mostrar_LA(aviones);
     //mostrar_LV(vuelos);
@@ -238,84 +241,176 @@ void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipaj
     free(linea);  // Liberar la memoria asignada por getline
 }
 
+void cargarDatosArchivo(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes)
+{
+    FILE *archivoAviones;
+    char lineaArchivo[256];
+    int seccion = 1; // 1: vuelos, 2: equipajes
+    
+    printf("Iniciando carga de datos...\n");
+
+    // Procesar aviones desde archivo
+    printf("\nProcesando aviones desde archivo...\n");
+    archivoAviones = fopen("Aviones.txt", "r");
+    if (archivoAviones == NULL) {
+        printf("Error al abrir el archivo de aviones\n");
+        return;
+    }
+
+    while (fgets(lineaArchivo, sizeof(lineaArchivo), archivoAviones)) {
+        lineaArchivo[strcspn(lineaArchivo, "\r\n")] = '\0'; // Eliminar saltos
+        if (strlen(lineaArchivo) == 0 || lineaArchivo[0] == '#') continue;
+        
+        avion *nuevoAvion = (avion*)malloc(sizeof(avion));
+        if (sscanf(lineaArchivo, "%d %d %d", &nuevoAvion->id, &nuevoAvion->tipo, &nuevoAvion->capacidadCarga) == 3) {
+            insertar_final_LA(aviones, nuevoAvion);
+            printf("#");
+        } else {
+            free(nuevoAvion);
+            printf("Error al leer avión: %s\n", lineaArchivo);
+        }
+    }
+    fclose(archivoAviones);
+
+    // Procesar vuelos y equipajes desde stdin
+    printf("\nProcesando vuelos y equipajes desde entrada estándar...\n");
+    while (fgets(lineaArchivo, sizeof(lineaArchivo), stdin)) {
+        lineaArchivo[strcspn(lineaArchivo, "\r\n")] = '\0';
+        
+        if (strlen(lineaArchivo) == 0) break; // Salir si EOF (Ctrl+Z en Windows)
+        
+        if (lineaArchivo[0] == '#') {
+            if (strstr(lineaArchivo, "vuelos") != NULL) {
+                seccion = 1;
+                printf("\nProcesando vuelos...\n");
+            } else if (strstr(lineaArchivo, "equipajes") != NULL) {
+                seccion = 2;
+                printf("\nProcesando equipajes...\n");
+            }
+            continue;
+        }
+
+        switch(seccion) {
+            case 1: { // Vuelos
+                vuelo *nuevoVuelo = (vuelo*)malloc(sizeof(vuelo));
+                if (sscanf(lineaArchivo, "%d %d %d %d", &nuevoVuelo->id, &nuevoVuelo->paisCiudad[0], &nuevoVuelo->paisCiudad[1], &nuevoVuelo->idAvion) == 4) {
+                    insertar_final_LV(vuelos, nuevoVuelo);
+                    printf("#");
+                } else {
+                    free(nuevoVuelo);
+                    printf("Error al leer vuelo: %s\n", lineaArchivo);
+                }
+                break;
+            }
+            case 2: { // Equipajes
+                equipaje *nuevoEquipaje = (equipaje*)malloc(sizeof(equipaje));
+                if (sscanf(lineaArchivo, "%d %d %d %d", &nuevoEquipaje->id, &nuevoEquipaje->tipo, &nuevoEquipaje->vuelo, &nuevoEquipaje->fragilidad) == 4) {
+                    vuelo *vueloAsignado = buscar_vuelo_por_id(*vuelos, nuevoEquipaje->vuelo);
+                    if (vueloAsignado != NULL) {
+                        nuevoEquipaje->paisCiudad[0] = vueloAsignado->paisCiudad[0];
+                        nuevoEquipaje->paisCiudad[1] = vueloAsignado->paisCiudad[1];
+                    } else {
+                        nuevoEquipaje->paisCiudad[0] = 0;
+                        nuevoEquipaje->paisCiudad[1] = 0;
+                    }
+                    nuevoEquipaje->tiempo_inicio = time(NULL);
+                    insertar_final_LE(equipajes, nuevoEquipaje);
+                    printf("#");
+                } else {
+                    free(nuevoEquipaje);
+                    printf("Error al leer equipaje: %s\n", lineaArchivo);
+                }
+                break;
+            }
+        }
+    }
+    printf("\nCarga de datos completada.\n");
+}
+
 void* procesoMostrador(void* threadid)
 {
     //printf("Jorge es gay");
     int tid = *( int* )threadid;
+    int fragil;
 
     sem_wait( &sem_mostradores );
 
     //printf("hilo del proceso %ld\n",tid);
-
-    sem_wait( &sem_aux_mostrador );
-
-    equipaje *auxEquipaje;
-
-    datosEquipaje( equipajes, auxEquipaje, tid, anteriorAuxEquipaje );
     
-    encolar( &colaEquipajeTipo1, tid );
+    pthread_mutex_lock(&mutex_aux_mostrador);
+
+    pthread_mutex_lock(&mutex_aux_mostrador_2);
+
+    fragil = traerFragil(&equipajes, tid); // Lectura segura
+
+
+    pthread_mutex_unlock(&mutex_aux_mostrador_2);
+
+    //encolar(&colaEquipajeTipo1, tid); // Operación segura
+    pthread_mutex_unlock(&mutex_aux_mostrador);
+
+    // ----- Sección crítica: Acceso a datos de equipajes -----
+    /*pthread_mutex_lock(&mutex_aux_mostrador_2);
+    fragil = traerFragil(&equipajes, tid); // Lectura segura
+    printf("\nid: %d, fragil: %d\n", tid, fragil);
+    pthread_mutex_unlock(&mutex_aux_mostrador_2);*/
+
+
+    //printf("\nidEquipaje: %d, vuelo: %d, fragil: %d\n", auxEquipaje->id,auxEquipaje->vuelo,auxEquipaje->fragilidad);
 
     //printf("\ntamano cola %d\n",colaEquipajeTipo1.tamano);
-
-    sem_post(&sem_aux_mostrador);
     
-
     sem_post(&sem_mostradores);
 
 }
 
-void datosEquipaje(ListaEquipaje l, equipaje* traerDatos, int tid, equipaje* datoAterior)
+int traerFragil(listaEquipaje* l, int tid)
 {
-    equipaje *auxEquipaje;
+    equipaje *auxEquipaje = NULL;
+    int fragil = 2;
 
-    if ( datoAterior == NULL )
+    auxEquipaje = l->prim;
+
+    // Buscar el equipaje con el ID solicitado
+    while (auxEquipaje != NULL) 
     {
-        auxEquipaje = l.prim;
-
-        if ( auxEquipaje->id == tid )
+        if (auxEquipaje->id == tid)
         {
-            traerDatos = auxEquipaje;
-        }else
-        {
-            while (auxEquipaje != NULL && auxEquipaje->id != tid)
-            {
-                //printf( "\nid: %d, Vuelo: %d, fragilidad: %d\n", auxEquipaje->id, auxEquipaje->vuelo, auxEquipaje->fragilidad );
-                printf( "\nJorge es gay\n");
-                if (auxEquipaje->id == tid)
-                {
-                    datoAterior = auxEquipaje;
-                    traerDatos = auxEquipaje;
-                    break;
-                }
-
-                auxEquipaje = auxEquipaje->prox;
+            fragil = auxEquipaje->fragilidad;
+            break;
+        } 
         
-            }
-        }
-    }else
-    {
-        auxEquipaje = datoAterior;
-
-        if ( auxEquipaje->id == tid )
-        {
-            traerDatos = auxEquipaje;
-        }else
-        {
-            while (auxEquipaje != NULL && auxEquipaje->id != tid)
-            {
-                printf( "\nRafael es gay\n");
-                if (auxEquipaje->id == tid)
-                {
-                    traerDatos = auxEquipaje;
-                    break;
-                }
-
-                auxEquipaje = auxEquipaje->prox;
-        
-            }
-        }
-        
+        auxEquipaje = auxEquipaje->prox;
     }
+    return fragil;
+
+}
+
+
+void datosEquipaje(ListaEquipaje l, equipaje** traerDatos, int tid, equipaje** datoAnterior) {
     
-    
+    equipaje *auxEquipaje = NULL;
+
+    // Si datoAnterior es NULL, comenzar desde el inicio de la lista
+    if (*datoAnterior == NULL) {
+        auxEquipaje = l.prim;
+    } else {
+        auxEquipaje = (*datoAnterior)->prox; // Continuar desde el último nodo
+    }
+
+    auxEquipaje = l.prim;
+
+    // Buscar el equipaje con el ID solicitado
+    while (auxEquipaje != NULL) {
+        if (auxEquipaje->id == tid) {
+            *traerDatos = auxEquipaje; // Devolver el nodo encontrado
+            *datoAnterior = auxEquipaje; // Actualizar para futuras búsquedas
+            return;
+        }
+        auxEquipaje = auxEquipaje->prox;
+    }
+
+    // Si no se encontró
+    *traerDatos = NULL;
+    *datoAnterior = NULL;
 }

@@ -84,22 +84,9 @@ def generar_aviones():
         
         for i in range(1, numero_equipaje):
 
-            id_e = random.randint(1, numero_equipaje)
-
-            lista_equipaje = []
-
-            if id_e not in lista_equipaje:
-                lista_equipaje.append(id_e)
-            else:
-                while id_e in lista_equipaje:
-                    id_e = random.randint(1, numero_equipaje)
-                    if id_e not in lista_equipaje:
-                        lista_equipaje.append(id_e)
-                        break
-
             tipo = random.randint(1, 4)
             idvuelo = random.randint(1, numero_aviones)
             fragil = random.randint(0, 1)
-            file.write(f"{id_e} {tipo} {idvuelo} {fragil}\n")
+            file.write(f"{i} {tipo} {idvuelo} {fragil}\n")
 
 generar_aviones()
