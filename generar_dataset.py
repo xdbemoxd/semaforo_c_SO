@@ -85,7 +85,7 @@ def generar_aviones():
         for i in range(1, numero_equipaje):
 
             tipo = random.randint(1, 4)
-            idvuelo = random.randint(1, numero_aviones)
+            idvuelo = random.randint(1, numero_aviones-1)
             fragil = random.randint(0, 1)
             file.write(f"{i} {tipo} {idvuelo} {fragil}\n")
 

@@ -16,6 +16,7 @@
 sem_t sem_mostradores;       // Turnos para los 5000 mostradores
 pthread_mutex_t mutex_aux_mostrador = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_aux_mostrador_2 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_aux_cinta = PTHREAD_MUTEX_INITIALIZER;
 sem_t sem_cintas;       // Turnos para las 500 cintas
 sem_t sem_almacenamiento; // Turnos para las áreas de almacenamiento
 //listas
@@ -33,6 +34,7 @@ Cola colaEquipajeTipo3Fragil;
 Cola colaEquipajeTipo4Fragil;
 //debuging
 int cantidadVeces =0;
+Cola vueloCorruptos;
 
 //nodo para guardar el anterior que se busco
 equipaje *anteriorAuxEquipaje;
@@ -53,8 +55,8 @@ volatile int ejecutando = 1;
 
 //Funciones que exije el enunciado
 void* procesoMostrador(void* threadid);
-void procesoCinta();
-void procesoAreaAlmacenamiento(); 
+void procesoCinta(int threadid, int numVuelo, int numCola);
+void procesoAreaAlmacenamiento(int threadid, int numAvion, int numCola); 
 void procesoAvion();
 void procesoCintaRecogida();
 
@@ -86,6 +88,7 @@ int main()
 
     //semaforos
     sem_init(&sem_mostradores, 0, numMostradores);
+    sem_init(&sem_cintas, 0, numCintas);
 
     // Cargar datos primero
     cargarDatos(&aviones, &vuelos, &equipajes);
@@ -137,14 +140,14 @@ int main()
     // Liberar memoria
     free(vectorHilo);
 
-    //mostrar_CE(&colaEquipajeTipo1);
+    //mostrar_CE(&vueloCorruptos);
 
-    printf("\ntamano cola1: %d\n",colaEquipajeTipo1.tamano);
-    printf("\ntamano cola2: %d\n",colaEquipajeTipo2.tamano);
-    printf("\ntamano cola3: %d\n",colaEquipajeTipo3.tamano);
-    printf("\ntamano cola4: %d\n",colaEquipajeTipo4.tamano);
+    //printf("\ntamano cola1: %d\n",colaEquipajeTipo1.tamano);
+    //printf("\ntamano cola2: %d\n",colaEquipajeTipo2.tamano);
+    //printf("\ntamano cola3: %d\n",colaEquipajeTipo3.tamano);
+    //printf("\ntamano cola4: %d\n",colaEquipajeTipo4.tamano);
 
-    //printf("%d veces", cantidadVeces);
+    //printf("\n%d veces\n", cantidadVeces);
 
     vaciar_LA(&aviones);
     vaciar_LV(&vuelos);
@@ -240,14 +243,18 @@ void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipaj
             case 2: 
             { // Equipajes
                 equipaje *nuevoEquipaje = (equipaje*)malloc(sizeof(equipaje));
-                if (sscanf(linea, "%d %d %d %d", 
-                    &nuevoEquipaje->id, 
-                    &nuevoEquipaje->tipo, 
-                    &nuevoEquipaje->vuelo, 
-                    &nuevoEquipaje->fragilidad) == 4) 
+                if (sscanf(linea, "%d %d %d %d", &nuevoEquipaje->id, &nuevoEquipaje->tipo, &nuevoEquipaje->vuelo, &nuevoEquipaje->fragilidad) == 4) 
                 {
                     
-                    vuelo *vueloAsignado = buscar_vuelo_por_id(*vuelos, nuevoEquipaje->vuelo);
+                    vuelo *vueloAsignado;
+
+                    vueloAsignado = vuelos->prim;
+                    
+                    while ( vueloAsignado != NULL && vueloAsignado->id != nuevoEquipaje->vuelo ) 
+                    {
+                        vueloAsignado = vueloAsignado->prox;
+                    }
+
                     if (vueloAsignado != NULL) 
                     {
                         nuevoEquipaje->paisCiudad[0] = vueloAsignado->paisCiudad[0];
@@ -346,7 +353,15 @@ void cargarDatosArchivo(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *
             case 2: { // Equipajes
                 equipaje *nuevoEquipaje = (equipaje*)malloc(sizeof(equipaje));
                 if (sscanf(lineaArchivo, "%d %d %d %d", &nuevoEquipaje->id, &nuevoEquipaje->tipo, &nuevoEquipaje->vuelo, &nuevoEquipaje->fragilidad) == 4) {
-                    vuelo *vueloAsignado = buscar_vuelo_por_id(*vuelos, nuevoEquipaje->vuelo);
+                    vuelo *vueloAsignado;
+
+                    vueloAsignado = vuelos->prim;
+                    
+                    while ( vueloAsignado != NULL && vueloAsignado->id != nuevoEquipaje->vuelo ) 
+                    {
+                        vueloAsignado = vueloAsignado->prox;
+                    }
+
                     if (vueloAsignado != NULL) {
                         nuevoEquipaje->paisCiudad[0] = vueloAsignado->paisCiudad[0];
                         nuevoEquipaje->paisCiudad[1] = vueloAsignado->paisCiudad[1];
@@ -371,80 +386,105 @@ void cargarDatosArchivo(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *
 void* procesoMostrador(void* threadid)
 {
     int tid = *( int* )threadid;
-    int fragil;
+    int fragil, numCola, numVuelo;
     equipaje *auxEquipaje = NULL;
 
     sem_wait( &sem_mostradores );
     
-    pthread_mutex_lock(&mutex_aux_mostrador);
+    pthread_mutex_lock( &mutex_aux_mostrador );
 
-    pthread_mutex_lock(&mutex_aux_mostrador_2);
+    pthread_mutex_lock( &mutex_aux_mostrador_2 );
     
     auxEquipaje = equipajes.prim;
 
-    while (auxEquipaje != NULL && auxEquipaje->id != tid) {
+    while (auxEquipaje != NULL && auxEquipaje->id != tid) 
+    {
         auxEquipaje = auxEquipaje->prox;
     }
 
     if ( auxEquipaje->tipo == 1 )
     {
-        cantidadVeces++;
-        if (auxEquipaje->fragilidad == 0 )
+        if ( auxEquipaje->fragilidad == 0 )
         {
-            encolar(&colaEquipajeTipo1,tid);
+            numCola = 10;
+            encolar( &colaEquipajeTipo1, tid );
         }else
         {
-            encolar(&colaEquipajeTipo1Fragil,tid);
+            numCola = 11;
+            encolar( &colaEquipajeTipo1Fragil, tid );
         } 
     }else
     {
         if ( auxEquipaje->tipo == 2 )
         {
-            if (auxEquipaje->fragilidad == 0 )
+            if ( auxEquipaje->fragilidad == 0 )
             {
-                encolar(&colaEquipajeTipo2,tid);
+                numCola = 20;
+                encolar( &colaEquipajeTipo2, tid );
             }else
             {
-                encolar(&colaEquipajeTipo2Fragil,tid);
+                numCola = 21;
+                encolar( &colaEquipajeTipo2Fragil, tid );
             } 
         }else
         {
             if ( auxEquipaje->tipo == 3 )
             {
-                if (auxEquipaje->fragilidad == 0 )
+                if ( auxEquipaje->fragilidad == 0 )
                 {
-                    encolar(&colaEquipajeTipo3,tid);
+                    numCola = 30;
+                    encolar( &colaEquipajeTipo3, tid );
                 }else
                 {
-                    encolar(&colaEquipajeTipo3Fragil,tid);
+                    numCola = 31;
+                    encolar( &colaEquipajeTipo3Fragil, tid );
                 } 
             }else
             {
                 if ( auxEquipaje->tipo == 4 )
                 {
-                    if (auxEquipaje->fragilidad == 0 )
+                    if ( auxEquipaje->fragilidad == 0 )
                     {
-                        encolar(&colaEquipajeTipo4,tid);
+                        numCola = 40;
+                        encolar( &colaEquipajeTipo4, tid );
                     }else
                     {
-                        encolar(&colaEquipajeTipo4Fragil,tid);
+                        numCola = 41;
+                        encolar( &colaEquipajeTipo4Fragil, tid );
                     } 
                 }
             }
         }
     }
 
-    pthread_mutex_unlock(&mutex_aux_mostrador_2);
+    numVuelo = auxEquipaje->vuelo;
 
-    pthread_mutex_unlock(&mutex_aux_mostrador);
+    pthread_mutex_unlock( &mutex_aux_mostrador_2 );
 
-    procesoCinta();
+    pthread_mutex_unlock( &mutex_aux_mostrador );
+
     
-    sem_post(&sem_mostradores);
+    sem_wait( &sem_cintas );
+    procesoCinta( tid, numVuelo, numCola );
+    sem_post( &sem_cintas );
+    
+    sem_post( &sem_mostradores );
 
 }
 
-void procesoCinta()
+void procesoCinta( int threadid, int numVuelo, int numCola)
 {
+    vuelo* auxVuelo;
+
+    pthread_mutex_lock( &mutex_aux_cinta );
     
+    auxVuelo = vuelos.prim;
+
+    while ( auxVuelo != NULL && auxVuelo->id != numVuelo) 
+    {
+        auxVuelo = auxVuelo->prox;
+    }
+    
+    pthread_mutex_unlock( &mutex_aux_cinta );
+  
 }
