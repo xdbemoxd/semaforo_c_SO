@@ -62,7 +62,7 @@ def generar_aviones():
             else:
                 ciudad = random.randint(96, 100)
 
-            avion = random.randint(1, numero_aviones)
+            avion = random.randint(1, numero_aviones-1)
 
             lista_aviones = []
 
