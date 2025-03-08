@@ -26,6 +26,8 @@ pthread_mutex_t mutex_aux_avion_2 = PTHREAD_MUTEX_INITIALIZER;
 listaAvion aviones;
 listaVuelo vuelos;
 listaEquipaje equipajes;
+Lista avionesDespejados;
+Lista avionesMostrados;
 //cola
 Cola colaEquipajeTipo1;
 Cola colaEquipajeTipo2;
@@ -41,6 +43,7 @@ int cantidadVeces = 0;
 Cola vueloCorruptos;
 //Contadores
 int catidadProcesosListos = 0;
+int listo = 0;
 
 //nodo para guardar el anterior que se busco
 equipaje *anteriorAuxEquipaje;
@@ -88,6 +91,8 @@ int main()
     crear_LA( &aviones );
     crear_LV( &vuelos );
     crear_LE( &equipajes );
+    crear_L( &avionesDespejados );
+    crear_L( &avionesMostrados );
 
     //colas
     crearCola( &colaEquipajeTipo1 );
@@ -162,7 +167,7 @@ int main()
     //printf("\ntamano cola3: %d\n",colaEquipajeTipo3.tamano);
     //printf("\ntamano cola4: %d\n",colaEquipajeTipo4.tamano);
 
-    //printf("\n%d veces\n", cantidadVeces);
+    printf("\n%d veces\n", catidadProcesosListos);
 
     vaciar_LA( &aviones );
     vaciar_LV( &vuelos );
@@ -424,61 +429,21 @@ void* procesoMostrador( void* threadid )
 
     if ( auxEquipaje->tipo == 1 )
     {
-        if ( auxEquipaje->fragilidad == 0 )
-        {
-            numCola = 10;
-            encolar( &colaEquipajeTipo1, tid );
-        }else
-        {
-            numCola = 11;
-            encolar( &colaEquipajeTipo1Fragil, tid );
-        } 
-    }else
+        numCola = auxEquipaje->fragilidad == 0 ? 10 : 11;
+        encolar( auxEquipaje->fragilidad == 0 ? &colaEquipajeTipo1 : &colaEquipajeTipo1Fragil, tid );
+    } else if ( auxEquipaje->tipo == 2 )
     {
-        if ( auxEquipaje->tipo == 2 )
-        {
-            if ( auxEquipaje->fragilidad == 0 )
-            {
-                numCola = 20;
-                encolar( &colaEquipajeTipo2, tid );
-            }else
-            {
-                numCola = 21;
-                encolar( &colaEquipajeTipo2Fragil, tid );
-            } 
-
-            //printf("\nestoy evaluando si soy especial idEqui: %d\n", tid);
-
-            equipajeEspecialVar = equipajeEspecial(tid); 
-        }else
-        {
-            if ( auxEquipaje->tipo == 3 )
-            {
-                if ( auxEquipaje->fragilidad == 0 )
-                {
-                    numCola = 30;
-                    encolar( &colaEquipajeTipo3, tid );
-                }else
-                {
-                    numCola = 31;
-                    encolar( &colaEquipajeTipo3Fragil, tid );
-                } 
-            }else
-            {
-                if ( auxEquipaje->tipo == 4 )
-                {
-                    if ( auxEquipaje->fragilidad == 0 )
-                    {
-                        numCola = 40;
-                        encolar( &colaEquipajeTipo4, tid );
-                    }else
-                    {
-                        numCola = 41;
-                        encolar( &colaEquipajeTipo4Fragil, tid );
-                    } 
-                }
-            }
-        }
+        numCola = auxEquipaje->fragilidad == 0 ? 20 : 21;
+        encolar( auxEquipaje->fragilidad == 0 ? &colaEquipajeTipo2 : &colaEquipajeTipo2Fragil, tid );
+        equipajeEspecialVar = equipajeEspecial(tid);
+    } else if ( auxEquipaje->tipo == 3 )
+    {
+        numCola = auxEquipaje->fragilidad == 0 ? 30 : 31;
+        encolar( auxEquipaje->fragilidad == 0 ? &colaEquipajeTipo3 : &colaEquipajeTipo3Fragil, tid );
+    } else if ( auxEquipaje->tipo == 4 )
+    {
+        numCola = auxEquipaje->fragilidad == 0 ? 40 : 41;
+        encolar( auxEquipaje->fragilidad == 0 ? &colaEquipajeTipo4 : &colaEquipajeTipo4Fragil, tid );
     }
 
     numVuelo = auxEquipaje->vuelo;
@@ -503,7 +468,8 @@ void* procesoMostrador( void* threadid )
         
     }
     
-    sem_wait( &sem_cintas );    
+    sem_wait( &sem_cintas ); 
+
     procesoCinta( tid, numVuelo, numCola );
     
     
@@ -627,7 +593,9 @@ void procesoAvion( int threadid, int numAvion, int numCola )
     if ( auxAvion->capacidadCarga == 0 )
     {
         printf("\nAvion: %d acaba de despegar\n", auxAvion->id);
+        insertar_inicio_L(&avionesDespejados, auxAvion->id);
         printf("\ncantidad de procesos listos %d\n", catidadProcesosListos);
+        procesoCintaRecogida();
     }else
     {
         encolar( &equipajePerdido, threadid );
@@ -642,48 +610,19 @@ void procesoAvion( int threadid, int numAvion, int numCola )
 
     //usleep(1000);
     
-    //printf("\ncantidad de procesos listos %d\n", catidadProcesosListos);
+    pthread_mutex_lock( &mutex_aux_avion_2 );
 
-    
-    while ( equipajes.longitud < catidadProcesosListos )
+
+    if ( catidadProcesosListos > equipajes.longitud  && listo == 0)
     {
-       //usleep(1000);
-
-        
-        //printf("\nesperando la partida de mi avion %d\n", threadid); 
-
-        
-            //pthread_mutex_lock( &mutex_aux_avion_2 );
-            //printf("\nya voy de salida %d\n", threadid);  
-            //pthread_mutex_unlock( &mutex_aux_avion_2 ); 
-            
-
-        //usleep(1000);
-
-        
-        
+        procesoCintaRecogida();
+        listo = 1;
     }
-
-    //printf("\navion: %d despego\n",numAvion);
     
+    pthread_mutex_unlock( &mutex_aux_avion_2 );
 }
 
-int avionFull( int idAvion )
+void procesoCintaRecogida()
 {
-    avion* auxAvion;
-    int avionListo = 1;
-
-    auxAvion = aviones.prim;
-
-    while ( auxAvion->id != idAvion && auxAvion != NULL )
-    {
-        auxAvion = auxAvion->prox;
-    }
-
-    if ( auxAvion->capacidadCarga == 0)
-    {
-        avionListo = 0;
-    }
-
-    return avionListo;
+    printf("\nestoy en cinta de entrega\n");
 }

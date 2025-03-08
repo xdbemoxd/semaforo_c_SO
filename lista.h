@@ -39,21 +39,26 @@ void crear_L(lista *L){
 	L->longitud = 0;
 }
 
-int buscar_L(lista L, int V){
+int buscar_L(lista L, int V)
+{
+	int auxEntero = 0;
 	nodo *aux;
 	aux = L.prim;
-	if(L.longitud > 0){
-		while(aux->info != V && aux->prox != NULL){
+
+	if( L.longitud > 0 )
+	{
+		while( aux->info != V && aux != NULL )
+		{
 			aux = aux->prox;
-			}
-		if(aux->prox == NULL){
-			return 0;
-			} else {
-			return 1;	
-			}
-		} else {
-		return 0;	
 		}
+
+		if( aux != NULL )
+		{
+			auxEntero = 1;
+		} 
+	} 
+	
+	return auxEntero;
 }
 
 int consultar_L(lista L, int P){
@@ -73,11 +78,16 @@ int consultar_L(lista L, int P){
 
 void insertar_inicio_L(lista *L, int Val){
 	nodo *nuevo,*aux;
+
 	nuevo = (nodo*)malloc(sizeof(nodo));
 	nuevo->info = Val;
-	if (L->longitud == 0){
+
+	if (L->longitud == 0)
+	{
 		nuevo->prox = NULL;
-	} else {
+	} 
+	else 
+	{
 		aux = L->prim;
 		nuevo->prox = aux;
 	}
@@ -85,21 +95,32 @@ void insertar_inicio_L(lista *L, int Val){
 	L->longitud = L->longitud + 1;
 }
 
-void insertar_final_L(lista *L, int Val){
+void insertar_final_L(lista *L, int Val)
+{
 	nodo *nuevo,*aux;
-	int i;
+
 	nuevo = (nodo*)malloc(sizeof(nodo));
+
 	nuevo->info = Val;
+
 	nuevo->prox = NULL;
-	if (L->longitud == 0){
+
+	if ( L->longitud == 0 )
+	{
 		L->prim = nuevo;
-	} else {
+	} 
+	else 
+	{
 		aux = L->prim;
-		for(i = 2; i <= L->longitud; i++){
+		
+		while (aux->prox != NULL)
+		{
 			aux = aux->prox;
 		}
+		
 		aux->prox = nuevo;
 	}
+
 	L->longitud = L->longitud + 1;
 }
 
