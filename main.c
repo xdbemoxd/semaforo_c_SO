@@ -9,7 +9,7 @@
 #include "avion.h"
 #include "equipaje.h"
 #include "vuelo.h"
-
+#include "ArbolEnario.h"
 #include <string.h>
 
 //Semaforos
@@ -28,6 +28,7 @@ listaVuelo vuelos;
 listaEquipaje equipajes;
 Lista avionesDespejados;
 Lista avionesMostrados;
+ArbolEnarioAux ordenEquipaje;
 //cola
 Cola colaEquipajeTipo1;
 Cola colaEquipajeTipo2;
@@ -93,6 +94,7 @@ int main()
     crear_LE( &equipajes );
     crear_L( &avionesDespejados );
     crear_L( &avionesMostrados );
+    arbolEnarioConstructorAviones( &ordenEquipaje );
 
     //colas
     crearCola( &colaEquipajeTipo1 );
@@ -168,6 +170,7 @@ int main()
     //printf("\ntamano cola4: %d\n",colaEquipajeTipo4.tamano);
 
     printf("\n%d veces\n", catidadProcesosListos);
+    mostrarAvionesArbol( ordenEquipaje );
 
     vaciar_LA( &aviones );
     vaciar_LV( &vuelos );
@@ -557,8 +560,6 @@ void procesoAvion( int threadid, int numAvion, int numCola )
 {
     avion* auxAvion;
 
-    //printf("\nliberando espacio en los semaforos %d\n", threadid);
-
     if ( numCola == 20 || numCola ==21 )
     {
         if ( equipajeEspecial( threadid ) != 0 )
@@ -578,8 +579,6 @@ void procesoAvion( int threadid, int numAvion, int numCola )
 
     pthread_mutex_lock( &mutex_aux_avion );
 
-    //printf("\nseccion critica de aviones %d\n", threadid);
-
     auxAvion = aviones.prim;
 
     while ( auxAvion->id != numAvion && auxAvion != NULL )
@@ -595,6 +594,7 @@ void procesoAvion( int threadid, int numAvion, int numCola )
         printf("\nAvion: %d acaba de despegar\n", auxAvion->id);
         insertar_inicio_L(&avionesDespejados, auxAvion->id);
         printf("\ncantidad de procesos listos %d\n", catidadProcesosListos);
+        insertarAvion( &ordenEquipaje, auxAvion->id );
         procesoCintaRecogida();
     }else
     {
@@ -604,11 +604,7 @@ void procesoAvion( int threadid, int numAvion, int numCola )
     
     catidadProcesosListos++;
 
-    //printf("\nsaliendo de la seccion critica de aviones %d\n", threadid);
-
     pthread_mutex_unlock( &mutex_aux_avion );
-
-    //usleep(1000);
     
     pthread_mutex_lock( &mutex_aux_avion_2 );
 

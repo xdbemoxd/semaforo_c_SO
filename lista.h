@@ -9,17 +9,20 @@
 #define lista_h
 
 // Definir diferentes tipos de listas
-typedef struct{
+typedef struct
+{
 	int longitud;
 	equipaje *prim;
 } listaEquipaje, ListaEquipaje;
 
-typedef struct{
+typedef struct
+{
 	int longitud;
 	avion *prim;
 } listaAvion, ListaAvion;
 
-typedef struct{
+typedef struct
+{
 	int longitud;
 	vuelo *prim;
 } listaVuelo, ListaVuelo;
