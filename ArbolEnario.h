@@ -71,6 +71,116 @@ void mostrarAvionesArbol( ArbolEnarioAux arbol )
 	
 }
 
+void insertarHijo( ArbolEnarioAux *arbol, listaEquipaje* listaEqui, int numAvion, int idMaleta )
+{
+	NodoArbolAvion* nodoAuxArbol = ( NodoArbolAvion* ) malloc ( sizeof( NodoArbolAvion ) );
+	equipaje* nodoAuxEqui = ( equipaje* ) malloc ( sizeof( equipaje ) );
+	ApuntadorEquipaje* nodoAuxApuntEqui = ( ApuntadorEquipaje* ) malloc ( sizeof( ApuntadorEquipaje ) );
+	
+
+	nodoAuxArbol = arbol->primero;
+
+	while ( nodoAuxArbol->numAvion != numAvion )
+	{
+		nodoAuxArbol = nodoAuxArbol->hermano;
+	}
+
+	nodoAuxEqui = listaEqui->prim;
+
+	while ( nodoAuxEqui->id != idMaleta )
+	{
+		nodoAuxEqui = nodoAuxEqui->prox;
+	}
+
+	if ( nodoAuxArbol->primero == NULL )
+	{
+		nodoAuxApuntEqui->siguiente = NULL;
+		nodoAuxApuntEqui->senalaEqui = nodoAuxEqui;
+		nodoAuxArbol->primero = nodoAuxApuntEqui;
+	}
+	else
+	{
+		ApuntadorEquipaje* nodoAuxApuntEqui2 = ( ApuntadorEquipaje* ) malloc ( sizeof( ApuntadorEquipaje ) );
+
+		nodoAuxApuntEqui2 = nodoAuxArbol->primero;
+
+		nodoAuxApuntEqui->senalaEqui = nodoAuxEqui;
+		nodoAuxApuntEqui->siguiente = nodoAuxApuntEqui2;
+		nodoAuxArbol->primero = nodoAuxApuntEqui;
+	}
+	
+}
+
+int existeAvion( ArbolEnarioAux* arbol, int numAvion )
+{
+	NodoArbolAvion* nodoAuxArbol = ( NodoArbolAvion* ) malloc ( sizeof( NodoArbolAvion ) );
+	int aux=1;
+
+	if ( arbol->primero != NULL )
+	{
+		nodoAuxArbol = arbol->primero;
+
+		while ( nodoAuxArbol != NULL )
+		{
+			if ( nodoAuxArbol->numAvion == numAvion )
+			{
+				break;
+			}
+
+			nodoAuxArbol = nodoAuxArbol->hermano;
+			
+		}
+
+		if (nodoAuxArbol != NULL)
+		{
+			aux = 0;
+		}
+	}
+
+	return aux;
+	
+}
+
+void mostrarEquipajesAvion( ArbolEnarioAux arbol, listaEquipaje LEquipaje, int numAvion )
+{
+	NodoArbolAvion* nodoAuxArbol = ( NodoArbolAvion* ) malloc ( sizeof( NodoArbolAvion ) );
+	ApuntadorEquipaje* nodoAuxApuntEqui = ( ApuntadorEquipaje* ) malloc ( sizeof( ApuntadorEquipaje ) );
+	equipaje* nodoAuxEqui = ( equipaje* ) malloc ( sizeof( equipaje ) );
+
+	nodoAuxArbol = arbol.primero;
+
+	while ( nodoAuxArbol != NULL )
+	{
+		if ( nodoAuxArbol->numAvion == numAvion )
+		{
+			break;
+		}
+
+		nodoAuxArbol = nodoAuxArbol->hermano;
+			
+	}
+
+	if ( nodoAuxArbol != NULL )
+	{
+		nodoAuxApuntEqui = nodoAuxArbol->primero;
+
+		printf("\n\n\nel avion %d, llevo los siguientes equipajes\n\n\n",numAvion);
+
+		while (nodoAuxApuntEqui != NULL)
+		{
+			nodoAuxEqui = nodoAuxApuntEqui->senalaEqui;
+			mostrar_equipaje(nodoAuxEqui);
+			nodoAuxApuntEqui = nodoAuxApuntEqui->siguiente;
+		}
+		
+
+	}
+	
+
+
+
+}
+
 // Funciones auxiliares internas
 void ArbolEnario_buscarPadreAux(NodoA* actual, int padre, int hijo, int* band);
 void ArbolEnario_agregarHijoAux(NodoA* actual, int hijo);

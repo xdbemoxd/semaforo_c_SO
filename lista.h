@@ -497,6 +497,7 @@ void mostrar_equipaje(equipaje *eq) {
         case 1: printf("Facturado"); break;
         case 2: printf("Mano"); break;
         case 3: printf("Especial"); break;
+		case 4:printf("Sobredimensionado"); break;
         default: printf("Desconocido"); break;
     }
     printf(")\n");

@@ -68,7 +68,7 @@ void* procesoMostrador( void* threadid );
 void procesoCinta( int threadid, int numVuelo, int numCola );
 void procesoAreaAlmacenamiento( int threadid, int numAvion, int numCola ); 
 void procesoAvion( int threadid, int numAvion, int numCola );
-void procesoCintaRecogida();
+void procesoCintaRecogida( int numAvion );
 
 //Otras funciones
 int equipajeEspecial(int idEqui);
@@ -161,13 +161,6 @@ int main()
 
     // Liberar memoria
     free( vectorHilo );
-
-    //mostrar_CE(&vueloCorruptos);
-
-    //printf("\ntamano cola1: %d\n",colaEquipajeTipo1.tamano);
-    //printf("\ntamano cola2: %d\n",colaEquipajeTipo2.tamano);
-    //printf("\ntamano cola3: %d\n",colaEquipajeTipo3.tamano);
-    //printf("\ntamano cola4: %d\n",colaEquipajeTipo4.tamano);
 
     printf("\n%d veces\n", catidadProcesosListos);
     mostrarAvionesArbol( ordenEquipaje );
@@ -462,12 +455,8 @@ void* procesoMostrador( void* threadid )
         
         if ( equipajeEspecialVar == 0 )
         {
-            //printf("\nsoy especial idEqui: %d\n", tid);
-
             pasillo( tid, numVuelo, numCola );
         }
-
-        //printf("\nno soy especial idEqui: %d\n", tid);
         
     }
     
@@ -484,8 +473,6 @@ void pasillo( int threadid, int numVuelo, int numCola )
     int idVuelo;
 
     pthread_mutex_lock( &mutex_aux_cinta );
-
-    //printf("\nestoy en la seccion critica de pasillo %d\n", threadid);
     
     auxVuelo = vuelos.prim;
 
@@ -495,8 +482,6 @@ void pasillo( int threadid, int numVuelo, int numCola )
     }
 
     idVuelo = auxVuelo->idAvion;
-
-    //printf("\nsali de la seccion critica de pasillo %d\n", threadid);
     
     pthread_mutex_unlock( &mutex_aux_cinta );
 
@@ -527,8 +512,6 @@ void procesoCinta( int threadid, int numVuelo, int numCola)
     int idVuelo;
 
     pthread_mutex_lock( &mutex_aux_cinta );
-
-    //printf("\nestoy en la seccion critica de cinta %d\n", threadid);
     
     auxVuelo = vuelos.prim;
 
@@ -538,8 +521,6 @@ void procesoCinta( int threadid, int numVuelo, int numCola)
     }
 
     idVuelo = auxVuelo->idAvion;
-
-    //printf("\nsaliendo de la seccion critica de cinta %d\n", threadid);
     
     pthread_mutex_unlock( &mutex_aux_cinta );
     usleep(1000);
@@ -588,19 +569,31 @@ void procesoAvion( int threadid, int numAvion, int numCola )
 
     auxAvion->capacidadCarga--;
 
-   
-    if ( auxAvion->capacidadCarga == 0 )
+    if ( auxAvion->capacidadCarga > 0)
     {
-        printf("\nAvion: %d acaba de despegar\n", auxAvion->id);
-        insertar_inicio_L(&avionesDespejados, auxAvion->id);
-        printf("\ncantidad de procesos listos %d\n", catidadProcesosListos);
-        insertarAvion( &ordenEquipaje, auxAvion->id );
-        procesoCintaRecogida();
+
+        if ( existeAvion( &ordenEquipaje, auxAvion->id ) == 0 )
+        {
+            insertarHijo( &ordenEquipaje, &equipajes, auxAvion->id, threadid );
+        }
+        else
+        {
+            insertarAvion( &ordenEquipaje, auxAvion->id );
+            insertarHijo( &ordenEquipaje, &equipajes, auxAvion->id, threadid );
+        }
     }else
     {
-        encolar( &equipajePerdido, threadid );
+        if ( auxAvion->capacidadCarga == 0 )
+        {
+            printf("\nAvion: %d acaba de despegar\n", auxAvion->id);
+            insertar_inicio_L(&avionesDespejados, auxAvion->id);
+            insertarHijo( &ordenEquipaje, &equipajes, auxAvion->id, threadid );
+            procesoCintaRecogida( numAvion );
+        }else
+        {
+            encolar( &equipajePerdido, threadid );
+        }
     }
-    
     
     catidadProcesosListos++;
 
@@ -611,14 +604,14 @@ void procesoAvion( int threadid, int numAvion, int numCola )
 
     if ( catidadProcesosListos > equipajes.longitud  && listo == 0)
     {
-        procesoCintaRecogida();
+        //procesoCintaRecogida();
         listo = 1;
     }
     
     pthread_mutex_unlock( &mutex_aux_avion_2 );
 }
 
-void procesoCintaRecogida()
+void procesoCintaRecogida( int numAvion )
 {
-    printf("\nestoy en cinta de entrega\n");
+    mostrarEquipajesAvion( ordenEquipaje, equipajes, numAvion );
 }

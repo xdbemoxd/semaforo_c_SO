@@ -15,7 +15,7 @@ typedef struct NodoA {
 typedef struct ApuntadorEquipaje
 {
 	struct ApuntadorEquipaje* siguiente;
-	equipaje* aux;
+	equipaje* senalaEqui;
 }ApuntadorEquipaje;
 
 typedef struct NodoArbolAvion
