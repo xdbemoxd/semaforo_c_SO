@@ -22,6 +22,7 @@ pthread_mutex_t mutex_aux_cinta = PTHREAD_MUTEX_INITIALIZER;
 sem_t sem_almacenamiento; // Turnos para las áreas de almacenamiento
 pthread_mutex_t mutex_aux_avion = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutex_aux_avion_2 = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_aux_avion_3 = PTHREAD_MUTEX_INITIALIZER;
 //listas
 listaAvion aviones;
 listaVuelo vuelos;
@@ -560,6 +561,8 @@ void procesoAvion( int threadid, int numAvion, int numCola )
 
     pthread_mutex_lock( &mutex_aux_avion );
 
+    pthread_mutex_lock( &mutex_aux_avion_3 );
+
     auxAvion = aviones.prim;
 
     while ( auxAvion->id != numAvion && auxAvion != NULL )
@@ -571,7 +574,7 @@ void procesoAvion( int threadid, int numAvion, int numCola )
 
     if ( auxAvion->capacidadCarga > 0)
     {
-
+        catidadProcesosListos++;
         if ( existeAvion( &ordenEquipaje, auxAvion->id ) == 0 )
         {
             insertarHijo( &ordenEquipaje, &equipajes, auxAvion->id, threadid );
@@ -583,6 +586,7 @@ void procesoAvion( int threadid, int numAvion, int numCola )
         }
     }else
     {
+        catidadProcesosListos++;
         if ( auxAvion->capacidadCarga == 0 )
         {
             insertar_inicio_L(&avionesDespejados, auxAvion->id);
@@ -594,7 +598,8 @@ void procesoAvion( int threadid, int numAvion, int numCola )
         }
     }
     
-    catidadProcesosListos++;
+
+    pthread_mutex_unlock( &mutex_aux_avion_3 );
 
     pthread_mutex_unlock( &mutex_aux_avion );
     
