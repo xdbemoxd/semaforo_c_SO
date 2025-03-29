@@ -11,6 +11,7 @@
 #include "vuelo.h"
 #include "ArbolEnario.h"
 #include <string.h>
+#include <stdarg.h> 
 
 //Semaforos
 sem_t sem_mostradores;       // Turnos para los 5000 mostradores
@@ -53,8 +54,17 @@ equipaje *anteriorAuxEquipaje;
 #define numMostradores 5000
 #define numCintas 500
 #define numAreasAlmacenamiento 250
-#define maxHilo 100
-
+#define maxHilo 1000
+#define limpiarSemyMutex 5000
+// Variables para estadísticas
+int num_mostradores_libres = numMostradores;
+int num_cintas_libres = numCintas;
+int num_areas_libres = numAreasAlmacenamiento;
+int equipaje_perdido = 0;
+int equipajes_fragiles_procesados = 0;
+int equipajes_especiales_procesados = 0;
+int equipajes_por_tipo[4] = {0, 0, 0, 0};
+time_t tiempo_inicio_global;
 //prototipo de cargarDatos
 void cargarDatos(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes);
 void cargarDatosArchivo(listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipajes);
@@ -72,11 +82,12 @@ void procesoAvion( int threadid, int numAvion, int numCola );
 void procesoCintaRecogida( int numAvion );
 
 //Otras funciones
+void log_mensaje(const char* tipo, const char* formato, ...);
 int equipajeEspecial(int idEqui);
 void pasillo( int threadid, int numVuelo, int numCola );
 int avionFull(int idAvion);
-
-
+void mostrar_estadisticas(int procesado, int total);
+void pausar_programa();
 int main()
 {
     //&inicializar
@@ -112,7 +123,9 @@ int main()
     sem_init(&sem_mostradores, 0, numMostradores);
     sem_init(&sem_cintas, 0, numCintas);
     sem_init(&sem_almacenamiento, 0, numAreasAlmacenamiento);
-
+// Registrar tiempo de inicio global
+    tiempo_inicio_global = time(NULL);
+    log_mensaje("INFO", "Iniciando simulación de gestión de equipajes");
     // Cargar datos primero
     cargarDatos(&aviones, &vuelos, &equipajes);
     //cargarDatosArchivo(&aviones, &vuelos, &equipajes);
@@ -122,50 +135,80 @@ int main()
     //mostrar_LE(equipajes);
 
     // Reservar memoria para los hilos
-    pthread_t *vectorHilo = (pthread_t*)malloc(equipajes.longitud * sizeof(pthread_t));
+    pthread_t *vectorHilo = (pthread_t*)malloc(maxHilo * sizeof(pthread_t));
 
-    if (vectorHilo == NULL) {
+    if (vectorHilo == NULL) 
+    {
         printf("Error: No se pudo asignar memoria para los hilos\n");
         return 1;
     }
 
     // Procesar equipajes en lotes
     nodoAux = equipajes.prim;
-    while ( procesado < equipajes.longitud ) 
+    while (procesado < equipajes.longitud) 
     {
-        //hilos_lote = 0;
+        hilos_lote = 0;
         
-        // Crear lote de hilos
-        while ( hilos_lote < equipajes.longitud && nodoAux != NULL ) 
+        // Crear lote de hilos (máximo maxHilo a la vez)
+        while (hilos_lote < maxHilo && procesado < equipajes.longitud && nodoAux != NULL) 
         {
-            int *id = malloc( sizeof( int ) );
-            if ( id != NULL) {
+            int *id = malloc(sizeof(int));
+            if (id != NULL) {
                 *id = nodoAux->id;
-                if ( pthread_create( &vectorHilo[ hilos_lote ], NULL, procesoMostrador, id ) == 0 ) 
+                if (pthread_create(&vectorHilo[hilos_lote], NULL, procesoMostrador, id) == 0) 
                 {
                     hilos_lote++;
                     procesado++;
-                } else {
-                    free( id );
-                    printf( "Error al crear hilo para equipaje %d\n" , nodoAux->id );
+                } 
+                else 
+                {
+                    free(id);
+                    log_mensaje("ERROR", "Error al crear hilo para equipaje %d", nodoAux->id);
                 }
             }
             nodoAux = nodoAux->prox;
         }
-        
+        // Mostrar progreso
+        // Mostrar progreso mejorado
+        printf("\rProcesando equipajes: %d/%d (%.1f%%) | Mostradores libres: %d | Cintas libres: %d | Áreas libres: %d", 
+               procesado, equipajes.longitud, (float)procesado/equipajes.longitud * 100,
+               num_mostradores_libres, num_cintas_libres, num_areas_libres);
+        fflush(stdout);
         // Esperar a que termine el lote actual
-        for ( int j = 0; j < equipajes.longitud; j++ ) 
+        for (int j = 0; j < hilos_lote; j++) 
         {
-            pthread_join( vectorHilo[ j ], NULL );
+            pthread_join(vectorHilo[j], NULL);
+        }
+        
+        // Pausa entre lotes para liberar recursos
+        usleep(50000);  // 50ms de pausa
+
+        // Cada 5000 equipajes procesados, liberar completamente los semáforos
+        if (procesado % limpiarSemyMutex == 0||procesado >= equipajes.longitud)
+        {
+            log_mensaje("SISTEMA", "Limpiando semáforos y mutexes...");
+            
+            // Destruir y reiniciar semáforos
+            sem_destroy(&sem_mostradores);
+            sem_destroy(&sem_cintas);
+            sem_destroy(&sem_almacenamiento);
+            
+            sem_init(&sem_mostradores, 0, numMostradores);
+            sem_init(&sem_cintas, 0, numCintas);
+            sem_init(&sem_almacenamiento, 0, numAreasAlmacenamiento);
+            
+            // Pausa más larga para asegurar la liberación completa
+            usleep(200000);  // 200ms
         }
     }
-
+    printf("\n");
+    mostrar_estadisticas(procesado, equipajes.longitud);
     // Liberar memoria
     free( vectorHilo );
 
-    printf("\n%d veces\n", catidadProcesosListos);
-    mostrar_L(avionesDespejados);
-
+    //printf("\n%d veces\n", catidadProcesosListos);
+    //mostrar_L(avionesDespejados);
+    
     vaciar_LA( &aviones );
     vaciar_LV( &vuelos );
     vaciar_LE( &equipajes );
@@ -199,19 +242,19 @@ void cargarDatos( listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipa
             if ( strstr( linea, "aviones" ) != NULL ) 
             {
                 seccion = 0;
-                printf( "\nProcesando aviones...\n" );
+                printf( "\nCargando datos de aviones...\n" );
                 continue;
             } 
             else if ( strstr( linea, "vuelos" ) != NULL ) 
             {
                 seccion = 1;
-                printf( "\nProcesando vuelos...\n" );
+                printf( "\nCargando datos de vuelos...\n" );
                 continue;
             } 
             else if ( strstr( linea, "equipajes" ) != NULL ) 
             {
                 seccion = 2;
-                printf( "\nProcesando equipajes...\n" );
+                printf( "\nCargando datos de equipajes...\n" );
                 continue;
             }
             continue;
@@ -226,7 +269,8 @@ void cargarDatos( listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipa
                 {
                     insertar_final_LA( aviones, nuevoAvion );
                     contadorEquipaje++;
-                    printf( "#" );
+                    printf("\rCargando aviones: %d",aviones->longitud);
+                    fflush(stdout);
                 } 
                 else 
                 {
@@ -241,13 +285,15 @@ void cargarDatos( listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipa
                 if (sscanf( linea, "%d %d %d %d", &nuevoVuelo->id, &nuevoVuelo->paisCiudad[0], &nuevoVuelo->paisCiudad[1], &nuevoVuelo->idAvion) == 4 ) 
                 {
                     insertar_final_LV( vuelos, nuevoVuelo );
-                    printf( "#" );
+                    printf("\rCargando vuelos: %d",vuelos->longitud);
+                    fflush(stdout);
                 } 
                 else 
                 {
                     free( nuevoVuelo );
                     printf( "Error al leer vuelo: %s\n", linea );
                 }
+                
                 break;
             }
             case 2: 
@@ -255,6 +301,8 @@ void cargarDatos( listaAvion *aviones, listaVuelo *vuelos, listaEquipaje *equipa
                 equipaje *nuevoEquipaje = ( equipaje* )malloc( sizeof( equipaje ) );
                 if ( sscanf( linea, "%d %d %d %d", &nuevoEquipaje->id, &nuevoEquipaje->tipo, &nuevoEquipaje->vuelo, &nuevoEquipaje->fragilidad ) == 4 ) 
                 {
+                    printf("\rCargando equipajes: %d",equipajes->longitud);
+                    fflush(stdout);
                     
                     vuelo *vueloAsignado;
 
@@ -310,7 +358,8 @@ void cargarDatosArchivo( listaAvion *aviones, listaVuelo *vuelos, listaEquipaje 
     // Procesar aviones desde archivo
     printf( "\nProcesando aviones desde archivo...\n" );
     archivoAviones = fopen( "Aviones.txt", "r" );
-    if ( archivoAviones == NULL ) {
+    if ( archivoAviones == NULL ) 
+    {
         printf( "Error al abrir el archivo de aviones\n" );
         return;
     }
@@ -394,7 +443,9 @@ void cargarDatosArchivo( listaAvion *aviones, listaVuelo *vuelos, listaEquipaje 
                     nuevoEquipaje->tiempo_inicio = time( NULL );
                     insertar_final_LE( equipajes, nuevoEquipaje );
                     printf( "#" );
-                } else {
+                } 
+                else 
+                {
                     free( nuevoEquipaje );
                     printf( "Error al leer equipaje: %s\n", lineaArchivo );
                 }
@@ -408,11 +459,13 @@ void cargarDatosArchivo( listaAvion *aviones, listaVuelo *vuelos, listaEquipaje 
 void* procesoMostrador( void* threadid )
 {
     int tid = *( int* ) threadid;
+    free(threadid);  // Liberar memoria ID
+    log_mensaje("EQUIPAJE", "Equipaje %d entrando al mostrador", tid);
     int fragil, numCola, numVuelo, equipajeEspecialVar = 1;
     equipaje *auxEquipaje = NULL;
 
     sem_wait( &sem_mostradores );
-    
+    num_mostradores_libres--;
     pthread_mutex_lock( &mutex_aux_mostrador );
 
     pthread_mutex_lock( &mutex_aux_mostrador_2 );
@@ -428,19 +481,30 @@ void* procesoMostrador( void* threadid )
     {
         numCola = auxEquipaje->fragilidad == 0 ? 10 : 11;
         encolar( auxEquipaje->fragilidad == 0 ? &colaEquipajeTipo1 : &colaEquipajeTipo1Fragil, tid );
-    } else if ( auxEquipaje->tipo == 2 )
+    } 
+    else if ( auxEquipaje->tipo == 2 )
     {
         numCola = auxEquipaje->fragilidad == 0 ? 20 : 21;
         encolar( auxEquipaje->fragilidad == 0 ? &colaEquipajeTipo2 : &colaEquipajeTipo2Fragil, tid );
         equipajeEspecialVar = equipajeEspecial(tid);
-    } else if ( auxEquipaje->tipo == 3 )
+    } 
+    else if ( auxEquipaje->tipo == 3 )
     {
         numCola = auxEquipaje->fragilidad == 0 ? 30 : 31;
         encolar( auxEquipaje->fragilidad == 0 ? &colaEquipajeTipo3 : &colaEquipajeTipo3Fragil, tid );
-    } else if ( auxEquipaje->tipo == 4 )
+    } 
+    else if ( auxEquipaje->tipo == 4 )
     {
         numCola = auxEquipaje->fragilidad == 0 ? 40 : 41;
         encolar( auxEquipaje->fragilidad == 0 ? &colaEquipajeTipo4 : &colaEquipajeTipo4Fragil, tid );
+    }
+    if (auxEquipaje->tipo >= 1 && auxEquipaje->tipo <= 4) {
+        equipajes_por_tipo[auxEquipaje->tipo-1]++;
+    }
+    
+    // Registrar si es frágil
+    if (auxEquipaje->fragilidad == 1) {
+        equipajes_fragiles_procesados++;
     }
 
     numVuelo = auxEquipaje->vuelo;
@@ -451,21 +515,24 @@ void* procesoMostrador( void* threadid )
 
     pthread_mutex_unlock( &mutex_aux_mostrador ); 
     
-    if ( numCola == 20 || numCola ==21 )
+    if ( numCola == 20 || numCola == 21 )
     {
-        
         if ( equipajeEspecialVar == 0 )
         {
             pasillo( tid, numVuelo, numCola );
+            // IMPORTANTE: Terminar aquí para evitar doble procesamiento
         }
-        
+        else
+        {
+            sem_wait( &sem_cintas );
+            procesoCinta( tid, numVuelo, numCola );
+        }
     }
-    
-    sem_wait( &sem_cintas ); 
-
-    procesoCinta( tid, numVuelo, numCola );
-    
-    
+    else
+    {
+        sem_wait( &sem_cintas ); 
+        procesoCinta( tid, numVuelo, numCola );
+    }
 }
 
 void pasillo( int threadid, int numVuelo, int numCola )
@@ -511,9 +578,10 @@ void procesoCinta( int threadid, int numVuelo, int numCola)
 {
     vuelo* auxVuelo;
     int idVuelo;
-
-    pthread_mutex_lock( &mutex_aux_cinta );
+    log_mensaje("EQUIPAJE", "Equipaje %d entrando a cinta (Vuelo %d, Cola %d)", threadid, numVuelo, numCola);
     
+    pthread_mutex_lock( &mutex_aux_cinta );
+    num_cintas_libres--;
     auxVuelo = vuelos.prim;
 
     while ( auxVuelo != NULL && auxVuelo->id != numVuelo) 
@@ -527,6 +595,8 @@ void procesoCinta( int threadid, int numVuelo, int numCola)
     usleep(1000);
 
     sem_wait( &sem_almacenamiento );
+    num_areas_libres--;
+    log_mensaje("EQUIPAJE", "Equipaje %d pasando a área de almacenamiento (Avión %d)", threadid, idVuelo);
     usleep(1000);
     procesoAreaAlmacenamiento( threadid, idVuelo, numCola );
     
@@ -535,6 +605,7 @@ void procesoCinta( int threadid, int numVuelo, int numCola)
 void procesoAreaAlmacenamiento( int threadid, int numAvion, int numCola )
 {
     usleep(1000);
+    log_mensaje("EQUIPAJE", "Equipaje %d en área de almacenamiento para Avión %d", threadid, numAvion);
     procesoAvion(threadid, numAvion, numCola);
 
 }
@@ -547,16 +618,21 @@ void procesoAvion( int threadid, int numAvion, int numCola )
         if ( equipajeEspecial( threadid ) != 0 )
         {
             sem_post( &sem_almacenamiento );
+            num_areas_libres++;
             sem_post( &sem_cintas );
+            num_cintas_libres++;
         }
     }
     else
     {
         sem_post( &sem_almacenamiento );
+        num_areas_libres++;
         sem_post( &sem_cintas );
+        num_cintas_libres++;
     }
     
     sem_post( &sem_mostradores );
+    num_mostradores_libres++;
     usleep(1000);
 
     pthread_mutex_lock( &mutex_aux_avion );
@@ -568,13 +644,14 @@ void procesoAvion( int threadid, int numAvion, int numCola )
     while ( auxAvion->id != numAvion && auxAvion != NULL )
     {
         auxAvion = auxAvion->prox;
+
     }
-
+    
     auxAvion->capacidadCarga--;
-
+    catidadProcesosListos++;
+    
     if ( auxAvion->capacidadCarga > 0)
     {
-        catidadProcesosListos++;
         if ( existeAvion( &ordenEquipaje, auxAvion->id ) == 0 )
         {
             insertarHijo( &ordenEquipaje, &equipajes, auxAvion->id, threadid );
@@ -584,17 +661,26 @@ void procesoAvion( int threadid, int numAvion, int numCola )
             insertarAvion( &ordenEquipaje, auxAvion->id );
             insertarHijo( &ordenEquipaje, &equipajes, auxAvion->id, threadid );
         }
-    }else
+    }
+    else
     {
-        catidadProcesosListos++;
         if ( auxAvion->capacidadCarga == 0 )
         {
+            log_mensaje("AVIÓN", "AVIÓN %d COMPLETAMENTE CARGADO", numAvion);
             insertar_inicio_L(&avionesDespejados, auxAvion->id);
             insertarHijo( &ordenEquipaje, &equipajes, auxAvion->id, threadid );
             procesoCintaRecogida( numAvion );
-        }else
+        }
+        else if ( auxAvion->capacidadCarga < 0 )
         {
+            log_mensaje("EQUIPAJE", "Equipaje %d PERDIDO - Avión %d sin capacidad", threadid, numAvion);
+            equipaje_perdido++;
             encolar( &equipajePerdido, threadid );
+        }
+        else
+        {
+            log_mensaje("EQUIPAJE", "Equipaje %d cargado en Avión %d (Capacidad restante: %d)", 
+                   threadid, numAvion, auxAvion->capacidadCarga);
         }
     }
     
@@ -630,5 +716,52 @@ void procesoAvion( int threadid, int numAvion, int numCola )
 
 void procesoCintaRecogida( int numAvion )
 {
+    log_mensaje("RECOGIDA", "Iniciando recogida de equipajes del Avión %d", numAvion);
     mostrarEquipajesAvion( ordenEquipaje, numAvion );
+    //pausar_programa();
+}
+void log_mensaje(const char* tipo, const char* formato, ...) {
+    time_t now = time(NULL);
+    char timestamp[20];
+    strftime(timestamp, sizeof(timestamp), "%H:%M:%S", localtime(&now));
+    
+     // Usamos un mutex para evitar que los mensajes se mezclen
+    static pthread_mutex_t mutex_log = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_lock(&mutex_log);
+
+    printf("[%s][%s] ", timestamp, tipo);
+    
+    va_list args;
+    va_start(args, formato);
+    vprintf(formato, args);
+    va_end(args);
+    printf("\n");
+    // Asegurarnos que la salida se muestre inmediatamente
+    fflush(stdout);
+    
+    pthread_mutex_unlock(&mutex_log);
+    
+}
+void mostrar_estadisticas(int procesado, int total) {
+    float porcentaje = (float)procesado/total * 100;
+    time_t now = time(NULL);
+    double tiempo_transcurrido = difftime(now, tiempo_inicio_global);
+    
+    printf("\n=== ESTADÍSTICAS (%.1f%% completado) ===\n", porcentaje);
+    printf("- Equipajes procesados: %d/%d\n", procesado, total);
+    printf("- Tiempo transcurrido: %.1fs\n", tiempo_transcurrido);
+    printf("- Tiempo promedio por equipaje: %.2fs\n", procesado > 0 ? tiempo_transcurrido/procesado : 0);
+    printf("- Equipajes por tipo: Tipo 1: %d, Tipo 2: %d, Tipo 3: %d, Tipo 4: %d\n", 
+           equipajes_por_tipo[0], equipajes_por_tipo[1], equipajes_por_tipo[2], equipajes_por_tipo[3]);
+    printf("- Recursos disponibles: Mostradores: %d/%d, Cintas: %d/%d, Áreas: %d/%d\n", 
+           num_mostradores_libres, numMostradores, num_cintas_libres, numCintas, num_areas_libres, numAreasAlmacenamiento);
+    printf("- Aviones despegados: %d\n", avionesDespejados.longitud);
+    printf("- Equipajes perdidos: %d\n", equipaje_perdido);
+}
+void pausar_programa()
+{
+    int N=6;
+    printf("Pausando por %d segundos...\n",N);
+    fflush(stdout);
+    sleep(N);  // Pausa por N segundos
 }

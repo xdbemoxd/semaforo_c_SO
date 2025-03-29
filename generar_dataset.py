@@ -79,7 +79,7 @@ def generar_aviones():
 
         # Sección de equipajes
         file.write("#equipajes\n")
-        numero_equipaje = 5001
+        numero_equipaje = 25001
         
         for i in range(1, numero_equipaje):
 

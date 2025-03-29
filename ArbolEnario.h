@@ -206,19 +206,19 @@ ArbolEnario* ArbolEnario_ConstructorConDato(int dato) {
 }
 
 // Destructor
-void ArbolEnario_Destructor(ArbolEnario* this) {
-	if (this != NULL) {
-		if (this->raiz != NULL) {
-			NodoA_Destructor(this->raiz);
+void ArbolEnario_Destructor(ArbolEnario* arbol) {
+	if (arbol != NULL) {
+		if (arbol->raiz != NULL) {
+			NodoA_Destructor(arbol->raiz);
 		}
-		free(this);
+		free(arbol);
 	}
 }
 
 // Verificar si es semilla (solo tiene raíz)
-int ArbolEnario_esSemilla(ArbolEnario* this) {
-	if (this != NULL && this->raiz != NULL) {
-		return NodoA_esHoja(this->raiz);
+int ArbolEnario_esSemilla(ArbolEnario* arbol) {
+	if (arbol != NULL && arbol->raiz != NULL) {
+		return NodoA_esHoja(arbol->raiz);
 	}
 	return 1;
 }
@@ -253,21 +253,21 @@ void ArbolEnario_agregarHijoAux(NodoA* actual, int hijo) {
 }
 
 // Agregar hijo (función pública)
-void ArbolEnario_agregarHijo(ArbolEnario* this, int padre, int hijo) {
-	if (this != NULL && this->raiz != NULL) {
+void ArbolEnario_agregarHijo(ArbolEnario* arbol, int padre, int hijo) {
+	if (arbol != NULL && arbol->raiz != NULL) {
 		int band = 0;
-		if (NodoA_obtenerDato(this->raiz) == padre) {
-			ArbolEnario_agregarHijoAux(this->raiz, hijo);
+		if (NodoA_obtenerDato(arbol->raiz) == padre) {
+			ArbolEnario_agregarHijoAux(arbol->raiz, hijo);
 		} else {
-			ArbolEnario_buscarPadreAux(this->raiz, padre, hijo, &band);
+			ArbolEnario_buscarPadreAux(arbol->raiz, padre, hijo, &band);
 		}
 	}
 }
 
 // Obtener dato de la raíz
-int ArbolEnario_obtenerDatoRaiz(ArbolEnario* this) {
-	if (this != NULL && this->raiz != NULL) {
-		return NodoA_obtenerDato(this->raiz);
+int ArbolEnario_obtenerDatoRaiz(ArbolEnario* arbol) {
+	if (arbol != NULL && arbol->raiz != NULL) {
+		return NodoA_obtenerDato(arbol->raiz);
 	}
 	return -1;
 }
@@ -284,10 +284,10 @@ void ArbolEnario_recorridoInOrdenAux(NodoA* actual, lista* lista, int padre) {
 }
 
 // InOrden (función pública)
-void ArbolEnario_inOrden(ArbolEnario* this, lista* lista) {
-	if (this != NULL && this->raiz != NULL) {
+void ArbolEnario_inOrden(ArbolEnario* arbol, lista* lista) {
+	if (arbol != NULL && arbol->raiz != NULL) {
 		crear_L(lista);
-		ArbolEnario_recorridoInOrdenAux(this->raiz, lista, -1);
+		ArbolEnario_recorridoInOrdenAux(arbol->raiz, lista, -1);
 	}
 }
 
@@ -305,10 +305,10 @@ void ArbolEnario_recorridoPreOrdenAux(NodoA* actual, lista* lista) {
 }
 
 // PreOrden (función pública)
-void ArbolEnario_preOrden(ArbolEnario* this, lista* lista) {
-	if (this != NULL && this->raiz != NULL) {
+void ArbolEnario_preOrden(ArbolEnario* arbol, lista* lista) {
+	if (arbol != NULL && arbol->raiz != NULL) {
 		crear_L(lista);
-		ArbolEnario_recorridoPreOrdenAux(this->raiz, lista);
+		ArbolEnario_recorridoPreOrdenAux(arbol->raiz, lista);
 	}
 }
 
@@ -326,10 +326,10 @@ void ArbolEnario_recorridoPostOrdenAux(NodoA* actual, lista* lista) {
 }
 
 // PostOrden (función pública)
-void ArbolEnario_postOrden(ArbolEnario* this, lista* lista) {
-	if (this != NULL && this->raiz != NULL) {
+void ArbolEnario_postOrden(ArbolEnario* arbol, lista* lista) {
+	if (arbol != NULL && arbol->raiz != NULL) {
 		crear_L(lista);
-		ArbolEnario_recorridoPostOrdenAux(this->raiz, lista);
+		ArbolEnario_recorridoPostOrdenAux(arbol->raiz, lista);
 	}
 }
 
@@ -361,10 +361,10 @@ void ArbolEnario_recorridoLevelOrdenAux(NodoA* actual, lista* lista) {
 }
 
 // LevelOrden (función pública)
-void ArbolEnario_levelOrden(ArbolEnario* this, lista* lista) {
-	if (this != NULL && this->raiz != NULL) {
+void ArbolEnario_levelOrden(ArbolEnario* arbol, lista* lista) {
+	if (arbol != NULL && arbol->raiz != NULL) {
 		crear_L(lista);
-		ArbolEnario_recorridoLevelOrdenAux(this->raiz, lista);
+		ArbolEnario_recorridoLevelOrdenAux(arbol->raiz, lista);
 	}
 }
 
@@ -387,14 +387,14 @@ void ArbolEnario_obtenerHijos(NodoA* padre, NodoA** hijos, int* numHijos) {
 }
 
 // Mostrar árbol
-void ArbolEnario_mostrarArbol(ArbolEnario* this) {
-	if (this == NULL || this->raiz == NULL) return;
+void ArbolEnario_mostrarArbol(ArbolEnario* arbol) {
+	if (arbol == NULL || arbol->raiz == NULL) return;
 
 	lista listaNivel;
 	crear_L(&listaNivel);
 	
 	printf("Árbol en nivel por nivel: ");
-	ArbolEnario_levelOrden(this, &listaNivel);
+	ArbolEnario_levelOrden(arbol, &listaNivel);
 	
 	nodo* actual = listaNivel.prim;
 	while (actual != NULL) {

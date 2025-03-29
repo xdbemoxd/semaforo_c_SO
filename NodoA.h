@@ -29,14 +29,14 @@ typedef struct NodoArbolAvion
 // Declaraciones de funciones
 NodoA* NodoA_Constructor(void);
 NodoA* NodoA_ConstructorConDato(int NuevoDato);
-void NodoA_Destructor(NodoA* this);
-int NodoA_obtenerDato(NodoA* this);
-void NodoA_modificarDato(NodoA* this, int nuevoDato);
-NodoA* NodoA_obtenerHijoIzquierdo(NodoA* this);
-NodoA* NodoA_obtenerHijoDerecho(NodoA* this);
-void NodoA_modificarHijoIzquierdo(NodoA* this, NodoA* nuevoHijoIzquierdo);
-void NodoA_modificarHijoDerecho(NodoA* this, NodoA* nuevoHijoDerecho);
-int NodoA_esHoja(NodoA* this);
+void NodoA_Destructor(NodoA* nodo);
+int NodoA_obtenerDato(NodoA* nodo);
+void NodoA_modificarDato(NodoA* nodo, int nuevoDato);
+NodoA* NodoA_obtenerHijoIzquierdo(NodoA* nodo);
+NodoA* NodoA_obtenerHijoDerecho(NodoA* nodo);
+void NodoA_modificarHijoIzquierdo(NodoA* nodo, NodoA* nuevoHijoIzquierdo);
+void NodoA_modificarHijoDerecho(NodoA* nodo, NodoA* nuevoHijoDerecho);
+int NodoA_esHoja(NodoA* nodo);
 
 // Constructor por defecto
 NodoA* NodoA_Constructor() {
@@ -58,67 +58,67 @@ NodoA* NodoA_ConstructorConDato(int NuevoDato) {
 }
 
 // Destructor
-void NodoA_Destructor(NodoA* this) {
-	if (this != NULL) {
-		if (this->hijoIzquierdo != NULL) {
-			NodoA_Destructor(this->hijoIzquierdo);
+void NodoA_Destructor(NodoA* nodo) {
+	if (nodo != NULL) {
+		if (nodo->hijoIzquierdo != NULL) {
+			NodoA_Destructor(nodo->hijoIzquierdo);
 		}
-		if (this->hijoDerecho != NULL) {
-			NodoA_Destructor(this->hijoDerecho);
+		if (nodo->hijoDerecho != NULL) {
+			NodoA_Destructor(nodo->hijoDerecho);
 		}
-		free(this);
+		free(nodo);
 	}
 }
 
 // Obtener dato
-int NodoA_obtenerDato(NodoA* this) {
-	if (this != NULL) {
-		return this->dato;
+int NodoA_obtenerDato(NodoA* nodo) {
+	if (nodo != NULL) {
+		return nodo->dato;
 	}
 	return -1;
 }
 
 // Modificar dato
-void NodoA_modificarDato(NodoA* this, int nuevoDato) {
-	if (this != NULL) {
-		this->dato = nuevoDato;
+void NodoA_modificarDato(NodoA* nodo, int nuevoDato) {
+	if (nodo != NULL) {
+		nodo->dato = nuevoDato;
 	}
 }
 
 // Obtener hijo izquierdo
-NodoA* NodoA_obtenerHijoIzquierdo(NodoA* this) {
-	if (this != NULL) {
-		return this->hijoIzquierdo;
+NodoA* NodoA_obtenerHijoIzquierdo(NodoA* nodo) {
+	if (nodo != NULL) {
+		return nodo->hijoIzquierdo;
 	}
 	return NULL;
 }
 
 // Obtener hijo derecho
-NodoA* NodoA_obtenerHijoDerecho(NodoA* this) {
-	if (this != NULL) {
-		return this->hijoDerecho;
+NodoA* NodoA_obtenerHijoDerecho(NodoA* nodo) {
+	if (nodo != NULL) {
+		return nodo->hijoDerecho;
 	}
 	return NULL;
 }
 
 // Modificar hijo izquierdo
-void NodoA_modificarHijoIzquierdo(NodoA* this, NodoA* nuevoHijoIzquierdo) {
-	if (this != NULL) {
-		this->hijoIzquierdo = nuevoHijoIzquierdo;
+void NodoA_modificarHijoIzquierdo(NodoA* nodo, NodoA* nuevoHijoIzquierdo) {
+	if (nodo != NULL) {
+		nodo->hijoIzquierdo = nuevoHijoIzquierdo;
 	}
 }
 
 // Modificar hijo derecho
-void NodoA_modificarHijoDerecho(NodoA* this, NodoA* nuevoHijoDerecho) {
-	if (this != NULL) {
-		this->hijoDerecho = nuevoHijoDerecho;
+void NodoA_modificarHijoDerecho(NodoA* nodo, NodoA* nuevoHijoDerecho) {
+	if (nodo != NULL) {
+		nodo->hijoDerecho = nuevoHijoDerecho;
 	}
 }
 
 // Verificar si es hoja
-int NodoA_esHoja(NodoA* this) {
-	if (this != NULL) {
-		return (this->hijoIzquierdo == NULL && this->hijoDerecho == NULL);
+int NodoA_esHoja(NodoA* nodo) {
+	if (nodo != NULL) {
+		return (nodo->hijoIzquierdo == NULL && nodo->hijoDerecho == NULL);
 	}
 	return 0;
 }

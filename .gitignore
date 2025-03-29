@@ -60,12 +60,12 @@ dkms.conf
 p/
 
 #documents
-
 *.pdf
+
 
 RUN
 
-*:Zone.Identifier
+*Zone.Identifier
 
 .vscode/
 
