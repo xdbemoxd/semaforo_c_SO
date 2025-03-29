@@ -16,6 +16,7 @@ def generar_aviones():
                 capacidad = random.randint(700, 800)
             file.write(f"{id} {tipo} {capacidad}\n")
 
+        lista_aviones = []
         # Sección de vuelos
         file.write("#vuelos\n")
         for id in range(1, numero_aviones):
@@ -64,13 +65,11 @@ def generar_aviones():
 
             avion = random.randint(1, numero_aviones-1)
 
-            lista_aviones = []
-
             if avion not in lista_aviones:
                 lista_aviones.append(avion)
             else:
                 while avion in lista_aviones:
-                    avion = random.randint(1, numero_aviones)
+                    avion = random.randint(1, numero_aviones-1)
                     if avion not in lista_aviones:
                         lista_aviones.append(avion)
                         break
@@ -87,6 +86,6 @@ def generar_aviones():
             tipo = random.randint(1, 4)
             idvuelo = random.randint(1, numero_aviones-1)
             fragil = random.randint(0, 1)
-            file.write(f"{i} {tipo} {idvuelo} {fragil}\n")
+            file.write(f"\n{i} {tipo} {idvuelo} {fragil}")
 
 generar_aviones()

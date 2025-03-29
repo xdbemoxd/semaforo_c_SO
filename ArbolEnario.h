@@ -138,10 +138,9 @@ int existeAvion( ArbolEnarioAux* arbol, int numAvion )
 	}
 
 	return aux;
-	
 }
 
-void mostrarEquipajesAvion( ArbolEnarioAux arbol, listaEquipaje LEquipaje, int numAvion )
+void mostrarEquipajesAvion( ArbolEnarioAux arbol, int numAvion )
 {
 	NodoArbolAvion* nodoAuxArbol = ( NodoArbolAvion* ) malloc ( sizeof( NodoArbolAvion ) );
 	ApuntadorEquipaje* nodoAuxApuntEqui = ( ApuntadorEquipaje* ) malloc ( sizeof( ApuntadorEquipaje ) );
@@ -166,19 +165,15 @@ void mostrarEquipajesAvion( ArbolEnarioAux arbol, listaEquipaje LEquipaje, int n
 
 		printf("\n\n\nel avion %d, llevo los siguientes equipajes\n\n\n",numAvion);
 
-		while (nodoAuxApuntEqui != NULL)
+		while ( nodoAuxApuntEqui != NULL )
 		{
 			nodoAuxEqui = nodoAuxApuntEqui->senalaEqui;
-			mostrar_equipaje(nodoAuxEqui);
+			mostrar_equipaje( nodoAuxEqui );
 			nodoAuxApuntEqui = nodoAuxApuntEqui->siguiente;
 		}
 		
-
 	}
 	
-
-
-
 }
 
 // Funciones auxiliares internas

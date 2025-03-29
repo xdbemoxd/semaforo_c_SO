@@ -42,24 +42,48 @@ void crear_L(lista *L){
 	L->longitud = 0;
 }
 
-int buscar_L(lista L, int V)
+void mostrar_L(lista L)
 {
-	int auxEntero = 0;
 	nodo *aux;
 	aux = L.prim;
 
 	if( L.longitud > 0 )
 	{
-		while( aux->info != V && aux != NULL )
+		while( aux != NULL )
 		{
+			printf("\navion: %d\n", aux->info);
 			aux = aux->prox;
 		}
-
-		if( aux != NULL )
-		{
-			auxEntero = 1;
-		} 
 	} 
+}
+
+int buscar_L(lista L, int V)
+{
+	int auxEntero = 1;
+	nodo *aux;
+	aux = L.prim;
+
+	if ( L.prim != NULL )
+	{
+		aux = L.prim;
+
+		while ( aux != NULL )
+		{
+			if ( aux->info == V )
+			{
+				
+				break;
+			}
+
+			aux = aux->prox;
+			
+		}
+
+		if ( aux != NULL )
+		{
+			auxEntero = 0;
+		}
+	}
 	
 	return auxEntero;
 }
@@ -497,7 +521,7 @@ void mostrar_equipaje(equipaje *eq) {
         case 1: printf("Facturado"); break;
         case 2: printf("Mano"); break;
         case 3: printf("Especial"); break;
-		case 4:printf("Sobredimensionado"); break;
+		case 4: printf("Sobredimensionado"); break;
         default: printf("Desconocido"); break;
     }
     printf(")\n");

@@ -163,7 +163,7 @@ int main()
     free( vectorHilo );
 
     printf("\n%d veces\n", catidadProcesosListos);
-    mostrarAvionesArbol( ordenEquipaje );
+    mostrar_L(avionesDespejados);
 
     vaciar_LA( &aviones );
     vaciar_LV( &vuelos );
@@ -585,7 +585,6 @@ void procesoAvion( int threadid, int numAvion, int numCola )
     {
         if ( auxAvion->capacidadCarga == 0 )
         {
-            printf("\nAvion: %d acaba de despegar\n", auxAvion->id);
             insertar_inicio_L(&avionesDespejados, auxAvion->id);
             insertarHijo( &ordenEquipaje, &equipajes, auxAvion->id, threadid );
             procesoCintaRecogida( numAvion );
@@ -601,17 +600,30 @@ void procesoAvion( int threadid, int numAvion, int numCola )
     
     pthread_mutex_lock( &mutex_aux_avion_2 );
 
-
-    if ( catidadProcesosListos > equipajes.longitud  && listo == 0)
+    if ( catidadProcesosListos == equipajes.longitud )
     {
-        //procesoCintaRecogida();
-        listo = 1;
+        int auxEntero = 1;
+        
+        while ( aviones.longitud >= auxEntero )
+        {
+            if ( buscar_L( avionesDespejados, auxEntero ) == 1 )
+            {
+                insertar_inicio_L( &avionesDespejados, auxEntero );
+                    
+                procesoCintaRecogida( auxEntero );
+            }
+            auxEntero++;  
+        }
+        
+
     }
-    
+
     pthread_mutex_unlock( &mutex_aux_avion_2 );
+    
+    
 }
 
 void procesoCintaRecogida( int numAvion )
 {
-    mostrarEquipajesAvion( ordenEquipaje, equipajes, numAvion );
+    mostrarEquipajesAvion( ordenEquipaje, numAvion );
 }
