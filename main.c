@@ -620,7 +620,10 @@ void procesoAreaAlmacenamiento( int threadid, int numAvion, int numCola )
 
 void procesoAvion( int threadid, int numAvion, int numCola )
 {
+    static pthread_mutex_t mutex_Paviones = PTHREAD_MUTEX_INITIALIZER;
     avion* auxAvion;
+
+    pthread_mutex_lock( &mutex_Paviones );
 
     if ( numCola == 20 || numCola ==21 )
     {
@@ -639,7 +642,7 @@ void procesoAvion( int threadid, int numAvion, int numCola )
         sem_post( &sem_cintas );
         num_cintas_libres++;
     }
-    
+    pthread_mutex_unlock( &mutex_Paviones );
     sem_post( &sem_mostradores );
     num_mostradores_libres++;
     
