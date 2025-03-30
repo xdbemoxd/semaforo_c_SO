@@ -62,3 +62,18 @@ sudo apt-get -y install make
 3) Nivel de utilización de los recursos. 
 
 4) La simulación deberá prestar atención para evitar las situaciones de interbloqueo, inanición y espera activa. Se debe procurar un elevado grado de concurrencia entre los procesos. Asimismo, para que la simulación sea inteligible, todos los procesos deberán emitir mensajes informativos por pantalla cada vez que su situación se modifique. De esta forma, la salida permitirá tener acceso a toda la información, para que se pueda verificar el comportamiento.
+
+# Pasos para compilar el archivo 
+
+1) Primero se debe generar el dataset usando el siguiente comando en la terminal `debe estar ubicado en la carpeta del proyecto`
+```
+python generar_dataset.py
+```
+2) Debe hacer el make en la misma ubicación, ponga la siguiente instruccion en el terminal
+```
+make
+```
+3) Ultimo paso es colocar en la terminal, colocar la siguiente instrucción
+```
+./RUN < Aviones.txt
+```
