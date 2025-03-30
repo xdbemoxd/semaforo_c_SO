@@ -82,12 +82,15 @@ void procesoAvion( int threadid, int numAvion, int numCola );
 void procesoCintaRecogida( int numAvion );
 
 //Otras funciones
-void log_mensaje(const char* tipo, const char* formato, ...);
-int equipajeEspecial(int idEqui);
+void log_mensaje( const char* tipo, const char* formato, ... );
+int equipajeEspecial( int idEqui );
 void pasillo( int threadid, int numVuelo, int numCola );
-int avionFull(int idAvion);
-void mostrar_estadisticas(int procesado, int total);
+int avionFull( int idAvion );
+void mostrar_estadisticas( int procesado, int total );
 void pausar_programa();
+void retardoxmaleta( int numCola );
+void espera( int tiempoEspera );
+
 int main()
 {
     //&inicializar
@@ -514,6 +517,8 @@ void* procesoMostrador( void* threadid )
     usleep(1000);
 
     pthread_mutex_unlock( &mutex_aux_mostrador ); 
+
+    //retardoxmaleta( numCola );
     
     if ( numCola == 20 || numCola == 21 )
     {
@@ -553,7 +558,7 @@ void pasillo( int threadid, int numVuelo, int numCola )
     
     pthread_mutex_unlock( &mutex_aux_cinta );
 
-    procesoAvion(threadid, idVuelo, numCola);
+    procesoAvion( threadid, idVuelo, numCola );
 }
 
 int equipajeEspecial(int idEqui)
@@ -594,6 +599,8 @@ void procesoCinta( int threadid, int numVuelo, int numCola)
     pthread_mutex_unlock( &mutex_aux_cinta );
     usleep(1000);
 
+    //retardoxmaleta( numCola );
+
     sem_wait( &sem_almacenamiento );
     num_areas_libres--;
     log_mensaje("EQUIPAJE", "Equipaje %d pasando a área de almacenamiento (Avión %d)", threadid, idVuelo);
@@ -605,10 +612,12 @@ void procesoCinta( int threadid, int numVuelo, int numCola)
 void procesoAreaAlmacenamiento( int threadid, int numAvion, int numCola )
 {
     usleep(1000);
+    //retardoxmaleta( numCola );
     log_mensaje("EQUIPAJE", "Equipaje %d en área de almacenamiento para Avión %d", threadid, numAvion);
     procesoAvion(threadid, numAvion, numCola);
 
 }
+
 void procesoAvion( int threadid, int numAvion, int numCola )
 {
     avion* auxAvion;
@@ -633,7 +642,9 @@ void procesoAvion( int threadid, int numAvion, int numCola )
     
     sem_post( &sem_mostradores );
     num_mostradores_libres++;
+    
     usleep(1000);
+    //retardoxmaleta( numCola );
 
     pthread_mutex_lock( &mutex_aux_avion );
 
@@ -750,18 +761,97 @@ void mostrar_estadisticas(int procesado, int total) {
     printf("\n=== ESTADÍSTICAS (%.1f%% completado) ===\n", porcentaje);
     printf("- Equipajes procesados: %d/%d\n", procesado, total);
     printf("- Tiempo transcurrido: %.1fs\n", tiempo_transcurrido);
-    printf("- Tiempo promedio por equipaje: %.2fs\n", procesado > 0 ? tiempo_transcurrido/procesado : 0);
+    porcentaje = (float)tiempo_transcurrido/procesado;
+    printf("- Tiempo promedio por equipaje: %.8fs\n", procesado > 0 ? porcentaje : 0);
     printf("- Equipajes por tipo: Tipo 1: %d, Tipo 2: %d, Tipo 3: %d, Tipo 4: %d\n", 
            equipajes_por_tipo[0], equipajes_por_tipo[1], equipajes_por_tipo[2], equipajes_por_tipo[3]);
     printf("- Recursos disponibles: Mostradores: %d/%d, Cintas: %d/%d, Áreas: %d/%d\n", 
            num_mostradores_libres, numMostradores, num_cintas_libres, numCintas, num_areas_libres, numAreasAlmacenamiento);
     printf("- Aviones despegados: %d\n", avionesDespejados.longitud);
-    printf("- Equipajes perdidos: %d\n", equipaje_perdido);
+    printf("- Equipajes perdidos: %d\n", equipaje_perdido );
+    porcentaje = (float)equipaje_perdido/procesado;
+    printf("- Porcentaje de equipaje perdido: %.2f\n", (porcentaje) * 100 );
+    
 }
+
 void pausar_programa()
 {
     int N=6;
     printf("Pausando por %d segundos...\n",N);
     fflush(stdout);
     sleep(N);  // Pausa por N segundos
+}
+
+void retardoxmaleta( int numCola )
+{
+    pthread_mutex_t mutex_retardo_maleta_10 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex_retardo_maleta_20 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex_retardo_maleta_30 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex_retardo_maleta_40 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex_retardo_maleta_11 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex_retardo_maleta_21 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex_retardo_maleta_31 = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex_retardo_maleta_41 = PTHREAD_MUTEX_INITIALIZER;
+
+   switch ( numCola )
+   {
+        case 10:
+        pthread_mutex_lock(&mutex_retardo_maleta_10);
+        espera(1250);
+        pthread_mutex_unlock(&mutex_retardo_maleta_10);
+        break;
+        
+        case 20:
+        pthread_mutex_lock(&mutex_retardo_maleta_20);
+        espera(1500);
+        pthread_mutex_unlock(&mutex_retardo_maleta_20);
+        break;
+
+        case 30:
+        pthread_mutex_lock(&mutex_retardo_maleta_30);
+        espera(1750);
+        pthread_mutex_unlock(&mutex_retardo_maleta_30);
+        break;
+
+        case 40:
+        pthread_mutex_lock(&mutex_retardo_maleta_40);
+        espera(2000);
+        pthread_mutex_unlock(&mutex_retardo_maleta_40);
+        break;
+
+        case 11:
+        pthread_mutex_lock(&mutex_retardo_maleta_11);
+        espera(2250);
+        pthread_mutex_unlock(&mutex_retardo_maleta_11);
+        break;
+
+        case 21:
+        pthread_mutex_lock(&mutex_retardo_maleta_21);
+        espera(2500);
+        pthread_mutex_unlock(&mutex_retardo_maleta_21);
+        break;
+
+        case 31:
+        pthread_mutex_lock(&mutex_retardo_maleta_31);
+        espera(2750);
+        pthread_mutex_unlock(&mutex_retardo_maleta_31);
+        break;
+
+        case 41:
+        pthread_mutex_lock(&mutex_retardo_maleta_41);
+        espera(3000);
+        pthread_mutex_unlock(&mutex_retardo_maleta_41);
+        break;
+        
+    default:
+        break;
+   }
+    
+
+}
+
+void espera( int tiempoEspera )
+{
+    usleep(tiempoEspera);
+    //fflush(stdout);
 }
