@@ -48,8 +48,7 @@ Cola vueloCorruptos;
 int catidadProcesosListos = 0;
 int listo = 0;
 
-//nodo para guardar el anterior que se busco
-equipaje *anteriorAuxEquipaje;
+
 //Tamanos 
 #define numMostradores 5000
 #define numCintas 500
@@ -101,8 +100,6 @@ int main()
     int procesado = 0;
     int hilos_lote = 0;
 
-    //nodo auxiliar en NULL
-    anteriorAuxEquipaje = NULL;
     //listas
     crear_LA( &aviones );
     crear_LV( &vuelos );
@@ -642,6 +639,7 @@ void procesoAvion( int threadid, int numAvion, int numCola )
         sem_post( &sem_cintas );
         num_cintas_libres++;
     }
+
     pthread_mutex_unlock( &mutex_Paviones );
     sem_post( &sem_mostradores );
     num_mostradores_libres++;
@@ -734,7 +732,9 @@ void procesoCintaRecogida( int numAvion )
     mostrarEquipajesAvion( ordenEquipaje, numAvion );
     //pausar_programa();
 }
-void log_mensaje(const char* tipo, const char* formato, ...) {
+
+void log_mensaje(const char* tipo, const char* formato, ...) 
+{
     time_t now = time(NULL);
     char timestamp[20];
     strftime(timestamp, sizeof(timestamp), "%H:%M:%S", localtime(&now));
@@ -756,7 +756,9 @@ void log_mensaje(const char* tipo, const char* formato, ...) {
     pthread_mutex_unlock(&mutex_log);
     
 }
-void mostrar_estadisticas(int procesado, int total) {
+
+void mostrar_estadisticas(int procesado, int total) 
+{
     float porcentaje = (float)procesado/total * 100;
     time_t now = time(NULL);
     double tiempo_transcurrido = difftime(now, tiempo_inicio_global);
@@ -855,6 +857,6 @@ void retardoxmaleta( int numCola )
 
 void espera( int tiempoEspera )
 {
-    usleep(tiempoEspera);
+    usleep( tiempoEspera );
     //fflush(stdout);
 }
