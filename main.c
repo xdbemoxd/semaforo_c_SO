@@ -509,13 +509,13 @@ void* procesoMostrador( void* threadid )
 
     numVuelo = auxEquipaje->vuelo;
 
-    usleep(1000);
+    //usleep(1000);
     pthread_mutex_unlock( &mutex_aux_mostrador_2 );
-    usleep(1000);
+    //usleep(1000);
 
     pthread_mutex_unlock( &mutex_aux_mostrador ); 
 
-    //retardoxmaleta( numCola );
+    retardoxmaleta( numCola );
     
     if ( numCola == 20 || numCola == 21 )
     {
@@ -594,9 +594,9 @@ void procesoCinta( int threadid, int numVuelo, int numCola)
     idVuelo = auxVuelo->idAvion;
     
     pthread_mutex_unlock( &mutex_aux_cinta );
-    usleep(1000);
+    //usleep(1000);
 
-    //retardoxmaleta( numCola );
+    retardoxmaleta( numCola );
 
     sem_wait( &sem_almacenamiento );
     num_areas_libres--;
@@ -608,8 +608,8 @@ void procesoCinta( int threadid, int numVuelo, int numCola)
 
 void procesoAreaAlmacenamiento( int threadid, int numAvion, int numCola )
 {
-    usleep(1000);
-    //retardoxmaleta( numCola );
+    //usleep(1000);
+    retardoxmaleta( numCola );
     log_mensaje("EQUIPAJE", "Equipaje %d en área de almacenamiento para Avión %d", threadid, numAvion);
     procesoAvion(threadid, numAvion, numCola);
 
@@ -644,8 +644,8 @@ void procesoAvion( int threadid, int numAvion, int numCola )
     sem_post( &sem_mostradores );
     num_mostradores_libres++;
     
-    usleep(1000);
-    //retardoxmaleta( numCola );
+    //usleep(1000);
+    retardoxmaleta( numCola );
 
     pthread_mutex_lock( &mutex_aux_avion );
 
@@ -802,49 +802,49 @@ void retardoxmaleta( int numCola )
    {
         case 10:
         pthread_mutex_lock(&mutex_retardo_maleta_10);
-        espera(1250);
+        espera(1000);
         pthread_mutex_unlock(&mutex_retardo_maleta_10);
         break;
         
         case 20:
         pthread_mutex_lock(&mutex_retardo_maleta_20);
-        espera(1500);
+        espera(2000);
         pthread_mutex_unlock(&mutex_retardo_maleta_20);
         break;
 
         case 30:
         pthread_mutex_lock(&mutex_retardo_maleta_30);
-        espera(1750);
+        espera(3000);
         pthread_mutex_unlock(&mutex_retardo_maleta_30);
         break;
 
         case 40:
         pthread_mutex_lock(&mutex_retardo_maleta_40);
-        espera(2000);
+        espera(4000);
         pthread_mutex_unlock(&mutex_retardo_maleta_40);
         break;
 
         case 11:
         pthread_mutex_lock(&mutex_retardo_maleta_11);
-        espera(2250);
+        espera(5000);
         pthread_mutex_unlock(&mutex_retardo_maleta_11);
         break;
 
         case 21:
         pthread_mutex_lock(&mutex_retardo_maleta_21);
-        espera(2500);
+        espera(6000);
         pthread_mutex_unlock(&mutex_retardo_maleta_21);
         break;
 
         case 31:
         pthread_mutex_lock(&mutex_retardo_maleta_31);
-        espera(2750);
+        espera(7000);
         pthread_mutex_unlock(&mutex_retardo_maleta_31);
         break;
 
         case 41:
         pthread_mutex_lock(&mutex_retardo_maleta_41);
-        espera(3000);
+        espera(8000);
         pthread_mutex_unlock(&mutex_retardo_maleta_41);
         break;
         
